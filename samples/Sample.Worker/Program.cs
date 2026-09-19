@@ -1,41 +1,22 @@
-var builder = WebApplication.CreateBuilder(args);
+using Messaging.RabbitMQ.DependencyInjection;
+using Sample.Contracts.Commands;
+using Sample.Worker.Consumers;
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+var builder = Host.CreateApplicationBuilder(args);
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+builder.Services.AddRabbitMqMessaging(options =>
 {
-    app.MapOpenApi();
-}
+    options.HostName = "localhost";
+    options.Port = 5672;
+    options.UserName = "messaging";
+    options.Password = "messaging";
+    options.VirtualHost = "/";
+});
 
-app.UseHttpsRedirection();
+builder.Services.AddRabbitMqConsumer<
+    CreateOrderCommand,
+    CreateOrderConsumer>("sample.orders");
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+var host = builder.Build();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+host.Run();
