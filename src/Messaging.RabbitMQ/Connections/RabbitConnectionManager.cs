@@ -3,23 +3,26 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
-
 namespace Messaging.RabbitMQ.Connections;
 
 public class RabbitConnectionManager : IAsyncDisposable
 {
     private readonly RabbitMessagingOptions options;
-    private readonly ILogger<RabbitConnectionManager> logger;
-    private readonly SemaphoreSlim gate = new(1, 1);
-    private IEnvironment? environment; private IConnection? connection;
-    private bool disposed;
 
+    private readonly ILogger<RabbitConnectionManager> logger;
+
+    private readonly SemaphoreSlim gate = new(1, 1);
+
+    private IEnvironment? environment;
+
+    private IConnection? connection;
+
+    private bool disposed;
     public RabbitConnectionManager(IOptions<RabbitMessagingOptions> options, ILogger<RabbitConnectionManager> logger)
     {
         this.options = options.Value;
         this.logger = logger;
     }
-
     public async Task<IConnection> GetConnectionAsync(CancellationToken cancellationToken = default)
     {
         await this.gate.WaitAsync(cancellationToken);
@@ -36,7 +39,8 @@ public class RabbitConnectionManager : IAsyncDisposable
             if (this.environment is null)
             {
                 var settings = ConnectionSettingsBuilder.Create()
-                    .Host(this.options.Host).Port(this.options.Port)
+                    .Host(this.options.Host)
+                    .Port(this.options.Port)
                     .User(this.options.Username)
                     .Password(this.options.Password)
                     .VirtualHost(this.options.VirtualHost)
@@ -46,6 +50,7 @@ public class RabbitConnectionManager : IAsyncDisposable
             }
 
             this.connection = await this.environment.CreateConnectionAsync(cancellationToken);
+
             return connection;
         }
         finally
@@ -63,17 +68,21 @@ public class RabbitConnectionManager : IAsyncDisposable
             {
                 return;
             }
-            
+
             this.disposed = true;
-            
+
             if (this.environment is not null)
             {
-                await this.environment.CloseAsync(); this.environment = null; this.connection = null;
+                await this.environment.CloseAsync();
+
+                this.environment = null;
+
+                this.connection = null;
             }
         }
-        finally 
-        { 
-            this.gate.Release(); 
+        finally
+        {
+            this.gate.Release();
         }
     }
 }
