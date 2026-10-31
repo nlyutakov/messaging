@@ -6,6 +6,7 @@ using Messaging.RabbitMQ.Connections;
 using Messaging.RabbitMQ.Rpc;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.AMQP.Client;
+using RabbitMQ.AMQP.Client.Impl;
 namespace Messaging.RabbitMQ.Producers;
 
 public class RabbitMessageProducer : IMessageProducer, IAsyncDisposable
@@ -45,8 +46,7 @@ public class RabbitMessageProducer : IMessageProducer, IAsyncDisposable
         var message = new AmqpMessage(payload)
             .Property("message-type", typeId)
             .ContentType("application/json")
-            .MessageId(Guid.NewGuid()
-            .ToString("N"))
+            .MessageId(Guid.NewGuid().ToString("N"))
             .Durable(true);
 
         var publisher = await GetPublisherAsync(destination);
@@ -60,7 +60,10 @@ public class RabbitMessageProducer : IMessageProducer, IAsyncDisposable
 
         this.logger.LogInformation("Published {MessageType} to {Destination}", typeId, destination);
     }
-    public Task<TResponse> RequestAsync<TRequest, TResponse>(string destination, TRequest request, RequestOptions? options = null, CancellationToken cancellationToken = default) => this.rpcClient.RequestAsync<TRequest, TResponse>(destination, request, options, cancellationToken);
+    public Task<TResponse> RequestAsync<TRequest, TResponse>(string destination, TRequest request, RequestOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        return this.rpcClient.RequestAsync<TRequest, TResponse>(destination, request, options, cancellationToken);
+    }
     private async Task<IPublisher> GetPublisherAsync(string destination)
     {
         ObjectDisposedException.ThrowIf(this.disposed, this);

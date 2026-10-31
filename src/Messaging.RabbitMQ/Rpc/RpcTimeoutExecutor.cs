@@ -16,11 +16,11 @@ public static class RpcTimeoutExecutor
             return await operation(linkedCts.Token)
                 .WaitAsync(linkedCts.Token);
         }
-        catch (OperationCanceledException)when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
-        catch (OperationCanceledException)when (timeoutCts.IsCancellationRequested)
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
         {
             throw new RpcTimeoutException(destination, requestType, timeout);
         }

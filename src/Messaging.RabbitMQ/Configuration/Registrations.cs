@@ -5,7 +5,9 @@ public record HandlerRegistration(string MessageTypeId, Type MessageType, Type H
 public class QueueRegistration
 {
     public string Name { get; }
+
     public QueueOptions Options { get; }
+
     public List<HandlerRegistration> Handlers { get; } = [];
     public QueueRegistration(string name, QueueOptions? options = null)
     {
@@ -23,7 +25,10 @@ public class ListenerRegistration
 public class QueueListenerBuilder
 {
     private readonly QueueRegistration queue;
-    internal QueueListenerBuilder(QueueRegistration queue) => this.queue = queue;
+    internal QueueListenerBuilder(QueueRegistration queue)
+    {
+        this.queue = queue;
+    }
     public QueueListenerBuilder Handle<TCommand, THandler>(string messageTypeId)
         where THandler : class, ICommandHandler<TCommand>
     {

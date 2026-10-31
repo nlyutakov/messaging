@@ -62,7 +62,7 @@ public class MessageListenerService : BackgroundService
 
             await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
         }
-        catch (OperationCanceledException)when (stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
         }
         finally

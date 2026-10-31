@@ -6,7 +6,10 @@ namespace Messaging.RabbitMQ.Rpc;
 public class RpcTimeoutManager
 {
     private readonly RpcOptions options;
-    public RpcTimeoutManager(IOptions<RabbitMessagingOptions> options) => this.options = options.Value.Rpc;
+    public RpcTimeoutManager(IOptions<RabbitMessagingOptions> options)
+    {
+        this.options = options.Value.Rpc;
+    }
     public TimeSpan ResolveTimeout(RequestOptions? options)
     {
         var timeout = options?.Timeout ?? this.options.DefaultTimeout;

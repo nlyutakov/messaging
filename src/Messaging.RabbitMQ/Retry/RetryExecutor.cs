@@ -31,7 +31,7 @@ public class RetryExecutor
 
                 return;
             }
-            catch (OperationCanceledException)when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
             }

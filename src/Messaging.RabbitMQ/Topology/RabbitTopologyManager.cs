@@ -44,7 +44,8 @@ public class RabbitTopologyManager
             {
                 RabbitQueueType.Classic => QueueType.CLASSIC,
                 RabbitQueueType.Quorum => QueueType.QUORUM,
-                _ => throw new ArgumentOutOfRangeException(nameof(queueType))};
+                _ => throw new ArgumentOutOfRangeException(nameof(queueType))
+            };
 
             var queueSpec = management.Queue(queue.Name)
                 .Type(amqpQueueType)

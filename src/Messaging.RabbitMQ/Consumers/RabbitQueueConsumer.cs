@@ -36,9 +36,9 @@ public class RabbitQueueConsumer
             .Queue(queue.Name)
             .InitialCredits(credit)
             .MessageHandler(async (context, message) =>
-        {
-            await ProcessMessageAsync(queue.Name, context, message, cancellationToken);
-        })
+            {
+                await ProcessMessageAsync(queue.Name, context, message, cancellationToken);
+            })
             .BuildAndStartAsync(cancellationToken);
 
         this.logger.LogInformation("Consumer started for {Queue}", queue.Name);
@@ -80,7 +80,7 @@ public class RabbitQueueConsumer
 
             context.Accept();
         }
-        catch (OperationCanceledException)when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             context.Requeue();
         }

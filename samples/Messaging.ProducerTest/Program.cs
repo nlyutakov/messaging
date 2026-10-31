@@ -4,22 +4,36 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
+
 builder.Services.AddRabbitMessaging(builder.Configuration.GetSection("RabbitMessaging"));
+
 builder.Services.AddRabbitMessageContracts(contracts =>
 {
     contracts.Register<CreateOrderCommand>("orders.create.v1");
 
     contracts.Register<GetOrderRequest>("orders.get.v1");
 });
-await using var host = builder.Build();
+
+using var host = builder.Build();
+
 var producer = host.Services.GetRequiredService<IMessageProducer>();
+
 var id = Guid.NewGuid();
+
 await producer.SendAsync("orders.commands.v2", new CreateOrderCommand(id));
+
 Console.WriteLine($"Command sent: {id}");
+
 var response = await producer.RequestAsync<GetOrderRequest, GetOrderResponse>("orders.queries", new GetOrderRequest(id), new RequestOptions { Timeout = TimeSpan.FromSeconds(5) });
+
 Console.WriteLine($"RPC response: {response.OrderId} / {response.Status}");
+
 Console.WriteLine("Press Ctrl+C to exit.");
+
 await host.WaitForShutdownAsync();
+
 public record CreateOrderCommand(Guid OrderId);
+
 public record GetOrderRequest(Guid OrderId);
+
 public record GetOrderResponse(Guid OrderId, string Status);

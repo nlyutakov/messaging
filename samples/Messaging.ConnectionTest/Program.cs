@@ -3,7 +3,9 @@ using Messaging.RabbitMQ.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
+
 builder.Services.AddRabbitMessaging(builder.Configuration.GetSection("RabbitMessaging"));
+
 builder.Services.AddRabbitListener(listener =>
 {
     listener.Listen("orders.commands.v2")
@@ -12,12 +14,19 @@ builder.Services.AddRabbitListener(listener =>
     listener.Listen("orders.queries")
         .Handle<GetOrderRequest, GetOrderResponse, GetOrderHandler>("orders.get.v1");
 });
-await using var host = builder.Build();
+
+using var host = builder.Build();
+
 Console.WriteLine("Worker: commands + RPC. Press Ctrl+C to stop.");
+
 await host.RunAsync();
+
 public record CreateOrderCommand(Guid OrderId);
+
 public record GetOrderRequest(Guid OrderId);
+
 public record GetOrderResponse(Guid OrderId, string Status);
+
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand>
 {
     public Task HandleAsync(CreateOrderCommand command, CancellationToken ct)

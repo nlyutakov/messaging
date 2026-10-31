@@ -17,6 +17,7 @@ public class MessageDispatcher : IMessageDispatcher
     public MessageDispatcher(IServiceScopeFactory scopeFactory, ListenerRegistration registration)
     {
         this.scopeFactory = scopeFactory;
+
         foreach (var queue in registration.Queues)
         {
             foreach (var handler in queue.Handlers)
@@ -47,16 +48,9 @@ public class MessageDispatcher : IMessageDispatcher
 
         var method = typeof(MessageDispatcher).GetMethod(isCommand ? nameof(InvokeCommandAsync) : nameof(InvokeRequestAsync), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-        var args = isCommand ? new[]
-        {
-            registration.MessageType
-        }
-
-        : new[]
-        {
-            registration.MessageType,
-            registration.ResponseType!
-        };
+        var args = isCommand
+            ? new[] { registration.MessageType }
+            : new[] { registration.MessageType, registration.ResponseType! };
 
         return method.MakeGenericMethod(args)
             .CreateDelegate<HandlerInvoker>();
@@ -68,5 +62,9 @@ public class MessageDispatcher : IMessageDispatcher
 
         return null;
     }
-    private static async Task<object?> InvokeRequestAsync<TRequest, TResponse>(IServiceProvider services, object message, CancellationToken ct) => await services.GetRequiredService<IRequestHandler<TRequest, TResponse>>().HandleAsync((TRequest)message, ct);
+    private static async Task<object?> InvokeRequestAsync<TRequest, TResponse>(IServiceProvider services, object message, CancellationToken ct)
+    {
+        return await services.GetRequiredService<IRequestHandler<TRequest, TResponse>>()
+            .HandleAsync((TRequest)message, ct);
+    }
 }

@@ -14,5 +14,8 @@ public class MessageTypeRegistry
 
         this.types.Add(typeof(TMessage), messageTypeId);
     }
-    public string GetMessageTypeId<TMessage>() => this.types.TryGetValue(typeof(TMessage), out var id) ? id : throw new InvalidOperationException($"Message type '{typeof(TMessage).Name}' is not registered.");
+    public string GetMessageTypeId<TMessage>()
+    {
+        return this.types.TryGetValue(typeof(TMessage), out var id) ? id : throw new InvalidOperationException($"Message type '{typeof(TMessage).Name}' is not registered.");
+    }
 }

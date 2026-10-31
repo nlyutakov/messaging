@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddOptions<RabbitMessagingOptions>()
             .Bind(configuration)
             .Validate(o => !string.IsNullOrWhiteSpace(o.Host), "RabbitMQ Host is required.")
-            .Validate(o => o.Port is> 0 and <= 65535, "Invalid RabbitMQ port.")
+            .Validate(o => o.Port is > 0 and <= 65535, "Invalid RabbitMQ port.")
             .Validate(o => o.Rpc.DefaultTimeout > TimeSpan.Zero, "RPC timeout must be positive.")
             .Validate(o => o.Consumer.Credit > 0 && o.Consumer.MaxConcurrency > 0, "Consumer limits must be positive.")
             .Validate(o => o.Consumer.Retry.MaxAttempts >= 1, "Retry MaxAttempts must be >=1.")
@@ -64,7 +64,7 @@ public static class ServiceCollectionExtensions
         {
             foreach (var handler in queue.Handlers)
             {
-                var serviceType = handler.ResponseType is null ? typeof(ICommandHandler<>).MakeGenericType(handler.MessageType) : typeof(IRequestHandler<, >).MakeGenericType(handler.MessageType, handler.ResponseType);
+                var serviceType = handler.ResponseType is null ? typeof(ICommandHandler<>).MakeGenericType(handler.MessageType) : typeof(IRequestHandler<,>).MakeGenericType(handler.MessageType, handler.ResponseType);
 
                 services.AddScoped(serviceType, handler.HandlerType);
             }
