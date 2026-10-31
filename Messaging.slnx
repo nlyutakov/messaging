@@ -1,0 +1,4 @@
+<Solution>
+  <Folder Name="/src/"><Project Path="src/Messaging.Abstractions/Messaging.Abstractions.csproj" /><Project Path="src/Messaging.RabbitMQ/Messaging.RabbitMQ.csproj" /></Folder>
+  <Folder Name="/samples/"><Project Path="samples/Messaging.ConnectionTest/Messaging.ConnectionTest.csproj" /><Project Path="samples/Messaging.ProducerTest/Messaging.ProducerTest.csproj" /></Folder>
+</Solution>
