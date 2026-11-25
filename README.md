@@ -1,34 +1,38 @@
-# Messaging — reconstructed project (net10.0)
+# CourierLane for .NET 10
 
-This archive reconstructs the source code from our Bulgarian ChatGPT conversation up through **Step 9.2: in-process exponential-backoff retry + DLQ**. It is **not an exact copy** of files on your work computer.
+A messaging library for .NET applications using RabbitMQ 4.x and AMQP 1.0. It supports commands, RPC, events, retries, dead-letter queues, lease-based idempotency, and a transactional outbox.
 
-## Structure
-- `src/Messaging.Abstractions`: handler interfaces, producer API, RPC response envelope and exceptions.
-- `src/Messaging.RabbitMQ`: connection, topology, dispatch, producer, RPC, hosted consumers, retry.
-- `samples/Messaging.ConnectionTest`: Worker listening to `orders.commands.v2` and `orders.queries`.
-- `samples/Messaging.ProducerTest`: sends one command and one RPC request.
+## Quick start
 
-## Run
-Requires .NET 10 SDK, RabbitMQ with AMQP 1.0 enabled (port 5672) and management UI optional.
+Install the .NET 10 SDK and start a local RabbitMQ broker. The samples use localhost and the local guest account.
 
 ```bash
-dotnet restore Messaging.slnx
 dotnet build Messaging.slnx
-dotnet run --project samples/Messaging.ConnectionTest
-dotnet run --project samples/Messaging.ProducerTest
+(cd samples/Messaging.ConnectionTest && dotnet run --no-build)
+# In a separate terminal
+(cd samples/Messaging.ProducerTest && dotnet run --no-build)
 ```
 
-The Worker deliberately throws on commands to test 3 attempts (2s and 4s waits) and DLQ `orders.commands.v2.dlq`; RPC succeeds.
+The worker handles `orders.create.v1` on `orders.commands.v2` and answers `orders.get.v1` on `orders.queries`. [Getting started](docs/getting-started.md)
 
-## Important limitations / follow-up
-- Dependency versions use floating `1.*` / `10.*` because the exact installed versions were not shared. Pin them to the working versions from the original machine before production. **The archive could not be compiled in this environment** (dotnet SDK not installed), so check API compatibility locally.
-- For existing queues, DLX arguments can conflict with prior declarations. Test with new queues or manage dead-lettering via RabbitMQ policies.
-- `Discard()` without configured DLQ may lose messages.
-- Retry is in-process, not broker-delayed; crashes reset the attempt counter. Handlers should be idempotent.
-- The consumer currently does not enforce `MaxConcurrency`, perform robust connection recovery, or classify permanent vs transient errors.
-- RPC requester timeout is 10 minutes internally; per-request timeout starts after requester acquisition, and cancellation/pending cleanup needs review.
-- The current dispatcher resolves handlers by interface; registering different handlers for the same CLR command type across queues needs keyed/type-specific resolution.
-- Use secrets/environment variables for production credentials; `guest/guest` is local-only.
+## Packages
 
-## Resume point
-Next planned step: **9.3 — classify retryable vs permanent failures** (e.g. invalid JSON -> DLQ directly; transient DB error -> retry).
+| Package ID | Purpose |
+| --- | --- |
+| `CourierLane.Abstractions` | Contracts for handlers, producers, RPC, and deduplication stores |
+| `CourierLane.RabbitMQ` | AMQP 1.0 transport and in-memory idempotency |
+| `CourierLane.Idempotency.Redis` | Shared Redis store |
+| `CourierLane.Idempotency.PostgreSql` | Shared PostgreSQL store |
+| `CourierLane.Idempotency.Sqlite` | Persistent local store |
+| `CourierLane.Outbox.PostgreSql` | Outbound messages written within a business transaction |
+| `CourierLane.Management` | DLQ REST API and SQLite archive |
+
+`Messaging.Management.Web` is the ASP.NET Core host for the API and the operator interface. Package IDs use `CourierLane` and C# namespaces use `Messaging`. [Install from a local NuGet feed](docs/deployment.md)
+
+## Guides
+
+- [Architecture](docs/architecture.md) · [Configuration](docs/configuration.md) · [Commands](docs/commands.md) · [RPC](docs/rpc.md) · [Events](docs/events.md)
+- [Retry](docs/retry.md) · [Idempotency](docs/idempotency.md) · [Redis](docs/redis-provider.md) · [PostgreSQL](docs/postgresql-provider.md) · [SQLite](docs/sqlite-provider.md)
+- [DLQ](docs/dead-letter-queues.md) · [DLQ Management](docs/dlq-management.md) · [Transactional Outbox](docs/transactional-outbox.md)
+- [Deployment](docs/deployment.md) · [Troubleshooting](docs/troubleshooting.md) · [Diagrams](docs/diagrams/README.md)
+- [Offline PDF guide](docs/CourierLane-guide-en.pdf) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md)
