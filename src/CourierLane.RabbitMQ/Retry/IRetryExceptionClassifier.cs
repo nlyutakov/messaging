@@ -1,4 +1,4 @@
-namespace Messaging.RabbitMQ.Retry;
+namespace CourierLane.RabbitMQ.Retry;
 
 public interface IRetryExceptionClassifier
 {

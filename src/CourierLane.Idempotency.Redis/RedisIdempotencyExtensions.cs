@@ -1,12 +1,12 @@
-using Messaging.Abstractions.Idempotency;
-using Messaging.RabbitMQ.Configuration;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.RabbitMQ.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
-namespace Messaging.Idempotency.Redis;
+namespace CourierLane.Idempotency.Redis;
 
 public static class RedisIdempotencyExtensions
 {
@@ -32,7 +32,7 @@ public static class RedisIdempotencyExtensions
 
         services.TryAddKeyedSingleton<IMessageDeduplicationStore>("Redis", (provider, _) =>
         {
-            var rabbit = provider.GetRequiredService<IOptions<RabbitMessagingOptions>>().Value;
+            var rabbit = provider.GetRequiredService<IOptions<CourierLaneOptions>>().Value;
             var redis = provider.GetRequiredService<IOptions<RedisIdempotencyOptions>>().Value;
             var connection = provider.GetRequiredKeyedService<IConnectionMultiplexer>("Redis");
             return new RedisMessageDeduplicationStore(connection.GetDatabase(), redis.KeyPrefix, rabbit.VirtualHost, rabbit.Idempotency.ProcessingTimeout, rabbit.Idempotency.RetentionPeriod);
@@ -58,5 +58,5 @@ internal class RedisIdempotencyOptions
 {
     public string ConnectionString { get; set; } = "";
 
-    public string KeyPrefix { get; set; } = "messaging:idempotency:";
+    public string KeyPrefix { get; set; } = "courierlane:idempotency:";
 }

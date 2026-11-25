@@ -1,14 +1,14 @@
-using Messaging.Abstractions.Producers;
-using Messaging.RabbitMQ.Producers;
+using CourierLane.Abstractions.Producers;
+using CourierLane.RabbitMQ.Producers;
 using Xunit;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
 public class MessageMetadataTests
 {
     [Theory]
     [InlineData("MESSAGE-TYPE")]
-    [InlineData("messaging-replay-count")]
+    [InlineData("courierlane-replay-count")]
     [InlineData("x-first-death-queue")]
     [InlineData("reply-to")]
     public void ReservedHeadersCannotOverrideTransportMetadata(string header)
@@ -24,7 +24,7 @@ public class MessageMetadataTests
         var second = RabbitMessageMetadata.Create([1], "order.v1", null);
         Assert.True(Guid.TryParseExact(first.MessageId()?.ToString(), "N", out _));
         Assert.NotEqual(first.MessageId(), second.MessageId());
-        Assert.True(DateTimeOffset.TryParse(first.Property("messaging-timestamp") as string, out var timestamp));
+        Assert.True(DateTimeOffset.TryParse(first.Property("courierlane-timestamp") as string, out var timestamp));
         Assert.Equal(TimeSpan.Zero, timestamp.Offset);
     }
 
@@ -35,7 +35,7 @@ public class MessageMetadataTests
         var rpc = RabbitMessageMetadata.Create([1], "order.v1", options, useNativeCorrelation: false);
         var command = RabbitMessageMetadata.Create([1], "order.v1", options);
         Assert.Equal("stable-id", rpc.MessageId());
-        Assert.Equal("logical-correlation", rpc.Property("messaging-correlation-id"));
+        Assert.Equal("logical-correlation", rpc.Property("courierlane-correlation-id"));
         Assert.Null(rpc.CorrelationId());
         Assert.Equal("logical-correlation", command.CorrelationId());
     }

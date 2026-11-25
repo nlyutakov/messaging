@@ -1,36 +1,45 @@
 using System.Collections.Concurrent;
-using Messaging.Abstractions.Exceptions;
-using Messaging.Abstractions.Handlers;
-using Messaging.Abstractions.Producers;
-using Messaging.Management;
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.Consumers;
-using Messaging.RabbitMQ.DependencyInjection;
-using Messaging.RabbitMQ.Topology;
+using CourierLane.Abstractions.Exceptions;
+using CourierLane.Abstractions.Handlers;
+using CourierLane.Abstractions.Producers;
+using CourierLane.Management;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Consumers;
+using CourierLane.RabbitMQ.DependencyInjection;
+using CourierLane.RabbitMQ.Topology;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.AMQP.Client;
 using Xunit;
+using CourierLane.RabbitMQ.Tests.Infrastructure;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
+[Collection(IntegrationTestCollection.Name)]
+[Trait("Category", "Integration")]
 public class EventDeliveryTests
 {
-    private const string HostVariable = RabbitIntegrationSettings.HostVariable;
     private const string EventType = "orders.created.v1";
 
-    [RabbitTheory]
+    private readonly IntegrationTestFixture fixture;
+
+    public EventDeliveryTests(IntegrationTestFixture fixture)
+    {
+        this.fixture = fixture;
+    }
+
+    [Theory]
     [InlineData(EventDeliveryMode.Broadcast)]
     [InlineData(EventDeliveryMode.CompetingConsumers)]
     public async Task RoutingAcrossIndependentConnections(EventDeliveryMode mode)
     {
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(25));
-        var exchange = $"messaging.tests.{Guid.NewGuid():N}";
+        var exchange = $"courierlane.tests.{Guid.NewGuid():N}";
         var deliveries = new ConcurrentQueue<(int Instance, int Value)>();
-        await using var first = CreateServices(exchange, mode, 1, deliveries);
-        await using var second = CreateServices(exchange, mode, 2, deliveries);
+        await using var first = this.CreateServices(exchange, mode, 1, deliveries);
+        await using var second = this.CreateServices(exchange, mode, 2, deliveries);
         var firstQueue = Assert.Single(first.GetRequiredService<ListenerRegistration>().Queues);
         var secondQueue = Assert.Single(second.GetRequiredService<ListenerRegistration>().Queues);
         var connection = await first.GetRequiredService<RabbitConnectionManager>().GetConnectionAsync(deadline.Token);
@@ -85,14 +94,14 @@ public class EventDeliveryTests
         }
     }
 
-    [RabbitTheory]
+    [Theory]
     [InlineData(EventDeliveryMode.Broadcast)]
     [InlineData(EventDeliveryMode.CompetingConsumers)]
     public async Task FailingEventGoesToTheDurableSubscriberDeadLetterQueue(EventDeliveryMode mode)
     {
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(25));
-        var exchange = $"messaging.tests.{Guid.NewGuid():N}";
-        await using var provider = CreateServices(exchange, mode, 1, new(), deadLetterEnabled: true);
+        var exchange = $"courierlane.tests.{Guid.NewGuid():N}";
+        await using var provider = this.CreateServices(exchange, mode, 1, new(), deadLetterEnabled: true);
         var queue = Assert.Single(provider.GetRequiredService<ListenerRegistration>().Queues);
         var binding = Assert.IsType<EventQueueBinding>(queue.EventBinding);
         var connection = await provider.GetRequiredService<RabbitConnectionManager>().GetConnectionAsync(deadline.Token);
@@ -108,7 +117,7 @@ public class EventDeliveryTests
             source = await provider.GetRequiredService<RabbitQueueConsumer>().StartAsync(queue, deadline.Token);
             deadLetter = await connection.ConsumerBuilder().Queue(dlq).MessageHandler((context, message) =>
             {
-                var metadata = (message.Annotation("x-first-death-queue"), message.Annotation("x-opt-messaging-failure"), message.MessageId());
+                var metadata = (message.Annotation("x-first-death-queue"), message.Annotation("x-opt-courierlane-failure"), message.MessageId());
                 context.Accept();
                 result.TrySetResult(metadata);
                 return Task.CompletedTask;
@@ -135,15 +144,15 @@ public class EventDeliveryTests
         }
     }
 
-    [RabbitTheory]
+    [Theory]
     [InlineData(EventDeliveryMode.CompetingConsumers)]
     public async Task ArchiveReplayTargetsOriginalQueueAndCannotLoop(EventDeliveryMode mode)
     {
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        var exchange = $"messaging.tests.{Guid.NewGuid():N}";
-        var folder = Directory.CreateTempSubdirectory("messaging-replay-");
+        var exchange = $"courierlane.tests.{Guid.NewGuid():N}";
+        var folder = Directory.CreateTempSubdirectory("courierlane-replay-");
         var observerQueue = exchange + ".observer";
-        await using var provider = CreateServices(exchange, mode, 1, new(), deadLetterEnabled: true);
+        await using var provider = this.CreateServices(exchange, mode, 1, new(), deadLetterEnabled: true);
         var queue = Assert.Single(provider.GetRequiredService<ListenerRegistration>().Queues);
         var binding = Assert.IsType<EventQueueBinding>(queue.EventBinding);
         var connection = await provider.GetRequiredService<RabbitConnectionManager>().GetConnectionAsync(deadline.Token);
@@ -154,11 +163,11 @@ public class EventDeliveryTests
             ["Management:DatabasePath"] = Path.Combine(folder.FullName, "archive.db"),
             [$"Management:Sources:{dlq}:0"] = queue.Name
         }).Build();
-        configuration.AddRabbitSettings("Rabbit");
+        configuration.AddRabbitSettings("Rabbit", this.fixture);
         await using var archiveHost = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
             {
-                services.AddRabbitMessaging(configuration.GetSection("Rabbit"));
+                services.AddCourierLane(configuration.GetSection("Rabbit"));
                 services.AddDeadLetterManagement(configuration.GetSection("Management"), "test");
             })
             .Build() as IAsyncDisposable ?? throw new InvalidOperationException("Host must support async disposal.");
@@ -202,8 +211,8 @@ public class EventDeliveryTests
             Assert.Equal(1, replayed.ReplayCount);
             var details = Assert.IsType<DeadLetterDetails>(await manager.InspectAsync(replayed.Id, deadline.Token));
             Assert.Equal("trace-test", details.CorrelationId);
-            Assert.Equal("creation-test", details.Headers["messaging-causation-id"]);
-            Assert.Equal("orders-test", details.Headers["messaging-source"]);
+            Assert.Equal("creation-test", details.Headers["courierlane-causation-id"]);
+            Assert.Equal("orders-test", details.Headers["courierlane-source"]);
             Assert.Equal("test-tenant", details.Headers["tenant"]);
             Assert.Equal(DeadLetterResult.Rejected, await manager.ApplyAsync(replayed.Id, DeadLetterAction.Replay, "test", deadline.Token));
             Assert.Equal(1, Volatile.Read(ref observed));
@@ -262,20 +271,24 @@ public class EventDeliveryTests
         }
     }
 
-    private static ServiceProvider CreateServices(string exchange, EventDeliveryMode mode, int instance, ConcurrentQueue<(int Instance, int Value)> deliveries, bool deadLetterEnabled = false)
+    private ServiceProvider CreateServices(string exchange, EventDeliveryMode mode, int instance, ConcurrentQueue<(int Instance, int Value)> deliveries, bool deadLetterEnabled = false)
     {
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Rabbit:Consumer:EnableIdempotency"] = "true",
             ["Rabbit:Consumer:DeadLetter:Enabled"] = deadLetterEnabled.ToString()
         }).Build();
-        config.AddRabbitSettings("Rabbit");
+
+        config.AddRabbitSettings("Rabbit", this.fixture);
+
         var services = new ServiceCollection();
+
         services.AddLogging();
-        services.AddRabbitMessaging(config.GetSection("Rabbit"));
-        services.AddRabbitMessageContracts(contracts => contracts.Register<OrderCreated>(EventType));
-        services.AddRabbitEventListener(events => events.Subscribe(exchange, "orders-projection").WithDeliveryMode(mode).Handle<OrderCreated, OrderCreatedHandler>(EventType));
+        services.AddCourierLane(config.GetSection("Rabbit"));
+        services.AddCourierLaneContracts(contracts => contracts.Register<OrderCreated>(EventType));
+        services.AddCourierLaneEventListener(events => events.Subscribe(exchange, "orders-projection").WithDeliveryMode(mode).Handle<OrderCreated, OrderCreatedHandler>(EventType));
         services.AddSingleton(new TestDelivery(instance, deliveries));
+
         return services.BuildServiceProvider();
     }
 
@@ -294,17 +307,6 @@ public class EventDeliveryTests
 
             delivery.Deliveries.Enqueue((delivery.Instance, command.Value));
             return Task.CompletedTask;
-        }
-    }
-
-    private class RabbitTheoryAttribute : TheoryAttribute
-    {
-        public RabbitTheoryAttribute()
-        {
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(HostVariable)))
-            {
-                this.Skip = $"Set {HostVariable} to a local RabbitMQ host.";
-            }
         }
     }
 }

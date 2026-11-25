@@ -1,16 +1,16 @@
 using System.Diagnostics.Metrics;
 using System.Text.Json;
-using Messaging.Abstractions.Producers;
-using Messaging.RabbitMQ.Producers;
+using CourierLane.Abstractions.Producers;
+using CourierLane.RabbitMQ.Producers;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Messaging.Outbox.PostgreSql;
+namespace CourierLane.Outbox.PostgreSql;
 
 internal class OutboxPublisherService(OutboxStorage storage, RabbitMessageProducer producer, IOptions<PostgreSqlOutboxOptions> options, ILogger<OutboxPublisherService> logger) : BackgroundService, IHostedLifecycleService
 {
-    private readonly Meter meter = new("Messaging.Outbox.PostgreSql");
+    private readonly Meter meter = new("CourierLane.Outbox.PostgreSql");
     private long backlog = -1;
 
     public Task StartingAsync(CancellationToken cancellationToken) => storage.InitializeAsync(cancellationToken);
@@ -20,7 +20,7 @@ internal class OutboxPublisherService(OutboxStorage storage, RabbitMessageProduc
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        this.meter.CreateObservableGauge("messaging.outbox.backlog", () =>
+        this.meter.CreateObservableGauge("courierlane.outbox.backlog", () =>
         {
             var value = Interlocked.Read(ref this.backlog);
             return value < 0 ? Array.Empty<Measurement<long>>() : new[] { new Measurement<long>(value) };

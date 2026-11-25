@@ -1,4 +1,4 @@
-namespace Messaging.Abstractions.Rpc;
+namespace CourierLane.Abstractions.Rpc;
 
 public class RpcResponseEnvelope
 {

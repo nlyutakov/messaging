@@ -1,24 +1,24 @@
-using Messaging.Abstractions.Idempotency;
-using Messaging.Idempotency.PostgreSql;
-using Messaging.Idempotency.Redis;
-using Messaging.Idempotency.Sqlite;
-using Messaging.RabbitMQ.DependencyInjection;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.Idempotency.PostgreSql;
+using CourierLane.Idempotency.Redis;
+using CourierLane.Idempotency.Sqlite;
+using CourierLane.RabbitMQ.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
 public class ProviderConformanceTests
 {
-    private const string PostgreSqlVariable = "MESSAGING_TEST_POSTGRESQL";
+    private const string PostgreSqlVariable = "COURIERLANE_TEST_POSTGRESQL";
 
     [Fact]
     public async Task InMemoryHonorsSharedLeaseContract()
     {
         var config = CreateConfiguration("InMemory");
-        using var provider = new ServiceCollection().AddRabbitMessaging(config).BuildServiceProvider();
+        using var provider = new ServiceCollection().AddCourierLane(config).BuildServiceProvider();
         var store = provider.GetRequiredService<IMessageDeduplicationStore>();
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         await ExerciseAsync(store, store, deadline.Token);
@@ -29,8 +29,8 @@ public class ProviderConformanceTests
     {
         var config = CreateConfiguration("Redis", new Dictionary<string, string?>
         {
-            ["Idempotency:Redis:ConnectionString"] = Environment.GetEnvironmentVariable("MESSAGING_TEST_REDIS"),
-            ["Idempotency:Redis:KeyPrefix"] = $"messaging:tests:{Guid.NewGuid():N}:"
+            ["Idempotency:Redis:ConnectionString"] = Environment.GetEnvironmentVariable("COURIERLANE_TEST_REDIS"),
+            ["Idempotency:Redis:KeyPrefix"] = $"courierlane:tests:{Guid.NewGuid():N}:"
         });
         using var first = BuildRedisProvider(config);
         using var second = BuildRedisProvider(config);
@@ -44,7 +44,7 @@ public class ProviderConformanceTests
         var configuration = CreateConfiguration("PostgreSql", new Dictionary<string, string?>
         {
             ["Idempotency:PostgreSql:ConnectionString"] = Environment.GetEnvironmentVariable(PostgreSqlVariable),
-            ["Idempotency:PostgreSql:KeyPrefix"] = $"messaging:tests:{Guid.NewGuid():N}:"
+            ["Idempotency:PostgreSql:KeyPrefix"] = $"courierlane:tests:{Guid.NewGuid():N}:"
         });
         var first = BuildPostgreSqlHost(configuration);
         var second = BuildPostgreSqlHost(configuration);
@@ -60,7 +60,7 @@ public class ProviderConformanceTests
     [Fact]
     public async Task SqliteHonorsSharedLeaseContractOnPersistentFile()
     {
-        var folder = Directory.CreateTempSubdirectory("messaging-sqlite-");
+        var folder = Directory.CreateTempSubdirectory("courierlane-sqlite-");
         try
         {
             var config = CreateConfiguration("Sqlite", new Dictionary<string, string?>
@@ -92,14 +92,14 @@ public class ProviderConformanceTests
     }
 
     private static ServiceProvider BuildRedisProvider(IConfiguration config) => new ServiceCollection()
-        .AddRabbitMessaging(config)
+        .AddCourierLane(config)
         .AddRedisIdempotency(config.GetSection("Idempotency:Redis"))
         .BuildServiceProvider();
 
     private static IHost BuildSqliteHost(IConfiguration config)
     {
         var builder = Host.CreateApplicationBuilder();
-        builder.Services.AddRabbitMessaging(config);
+        builder.Services.AddCourierLane(config);
         builder.Services.AddSqliteIdempotency(config.GetSection("Idempotency:Sqlite"));
         return builder.Build();
     }
@@ -107,7 +107,7 @@ public class ProviderConformanceTests
     private static IHost BuildPostgreSqlHost(IConfiguration config)
     {
         var builder = Host.CreateApplicationBuilder();
-        builder.Services.AddRabbitMessaging(config);
+        builder.Services.AddCourierLane(config);
         builder.Services.AddPostgreSqlIdempotency(config.GetSection("Idempotency:PostgreSql"));
         return builder.Build();
     }
@@ -162,9 +162,9 @@ public class ProviderConformanceTests
     {
         public RedisFactAttribute()
         {
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MESSAGING_TEST_REDIS")))
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("COURIERLANE_TEST_REDIS")))
             {
-                this.Skip = "Set MESSAGING_TEST_REDIS to a local Redis connection string.";
+                this.Skip = "Set COURIERLANE_TEST_REDIS to a local Redis connection string.";
             }
         }
     }

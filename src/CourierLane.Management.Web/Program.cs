@@ -1,5 +1,5 @@
-using Messaging.Management;
-using Messaging.RabbitMQ.DependencyInjection;
+using CourierLane.Management;
+using CourierLane.RabbitMQ.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +18,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.Audience = audience;
         options.MapInboundClaims = false;
     });
-builder.Services.AddRabbitMessaging(builder.Configuration.GetSection("RabbitMessaging"));
+builder.Services.AddCourierLane(builder.Configuration.GetSection("CourierLane"));
 builder.Services.AddDeadLetterManagement(builder.Configuration.GetSection("DeadLetterManagement"), JwtBearerDefaults.AuthenticationScheme);
 
 var app = builder.Build();

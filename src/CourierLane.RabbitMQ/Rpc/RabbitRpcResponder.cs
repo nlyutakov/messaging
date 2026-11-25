@@ -1,11 +1,11 @@
 using System.Text.Json;
-using Messaging.Abstractions.Rpc;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.Dispatching;
-using Messaging.RabbitMQ.Diagnostics;
+using CourierLane.Abstractions.Rpc;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Dispatching;
+using CourierLane.RabbitMQ.Diagnostics;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.AMQP.Client;
-namespace Messaging.RabbitMQ.Rpc;
+namespace CourierLane.RabbitMQ.Rpc;
 
 public class RabbitRpcResponder
 {
@@ -30,7 +30,7 @@ public class RabbitRpcResponder
             .RequestQueue(queueName)
             .Handler(async (context, message) =>
             {
-                using var activity = MessagingDiagnostics.StartProcessing(message, "respond", queueName);
+                using var activity = CourierLaneDiagnostics.StartProcessing(message, "respond", queueName);
                 RpcResponseEnvelope envelope;
 
                 try

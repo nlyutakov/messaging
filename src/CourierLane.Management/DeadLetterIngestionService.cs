@@ -1,17 +1,17 @@
 using System.Security.Cryptography;
 using System.Text.Json;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.Producers;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Producers;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.AMQP.Client;
 
-namespace Messaging.Management;
+namespace CourierLane.Management;
 
 internal class DeadLetterIngestionService(DeadLetterArchive archive, RabbitConnectionManager connections, IOptions<DeadLetterOptions> options, ILogger<DeadLetterIngestionService> logger) : BackgroundService
 {
-    internal const string ReplayCountProperty = "messaging-replay-count";
+    internal const string ReplayCountProperty = "courierlane-replay-count";
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -62,7 +62,7 @@ internal class DeadLetterIngestionService(DeadLetterArchive archive, RabbitConne
             var messageId = message.MessageId() as string;
             var type = message.Property("message-type") as string;
             var target = ReadAnnotation(message, "x-last-death-queue") ?? ReadAnnotation(message, "x-first-death-queue");
-            var failure = ReadAnnotation(message, "x-opt-messaging-failure") ?? ReadAnnotation(message, "x-last-death-reason") ?? ReadAnnotation(message, "x-first-death-reason");
+            var failure = ReadAnnotation(message, "x-opt-courierlane-failure") ?? ReadAnnotation(message, "x-last-death-reason") ?? ReadAnnotation(message, "x-first-death-reason");
             var count = message.Property(ReplayCountProperty) is int replayCount ? Math.Max(0, replayCount) : 0;
             var payload = message.Body();
             var headers = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -74,7 +74,7 @@ internal class DeadLetterIngestionService(DeadLetterArchive archive, RabbitConne
                 }
             }
 
-            foreach (var name in new[] { "messaging-correlation-id", "messaging-causation-id", "messaging-source", "messaging-timestamp" })
+            foreach (var name in new[] { "courierlane-correlation-id", "courierlane-causation-id", "courierlane-source", "courierlane-timestamp" })
             {
                 if (message.Property(name) is string value)
                 {
@@ -82,7 +82,7 @@ internal class DeadLetterIngestionService(DeadLetterArchive archive, RabbitConne
                 }
             }
 
-            if (message.Property("messaging-header-names") is string catalog)
+            if (message.Property("courierlane-header-names") is string catalog)
             {
                 try
                 {

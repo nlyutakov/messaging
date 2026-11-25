@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
-using Messaging.Abstractions.Handlers;
+using CourierLane.Abstractions.Handlers;
 
-namespace Messaging.RabbitMQ.Configuration;
+namespace CourierLane.RabbitMQ.Configuration;
 
 public enum EventDeliveryMode
 {
@@ -92,7 +92,7 @@ public class EventSubscriptionBuilder
         }
 
         var identity = Encoding.UTF8.GetBytes($"{this.Exchange.Length}:{this.Exchange}{this.Subscriber}");
-        var stableName = $"messaging.events.{Convert.ToHexStringLower(SHA256.HashData(identity))}";
+        var stableName = $"courierlane.events.{Convert.ToHexStringLower(SHA256.HashData(identity))}";
         var broadcast = this.mode == EventDeliveryMode.Broadcast;
         var queue = new QueueRegistration(broadcast ? $"{stableName}.{Guid.NewGuid():N}" : stableName)
         {

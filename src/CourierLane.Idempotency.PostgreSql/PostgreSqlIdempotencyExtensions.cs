@@ -1,5 +1,5 @@
-using Messaging.Abstractions.Idempotency;
-using Messaging.RabbitMQ.Configuration;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.RabbitMQ.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
-namespace Messaging.Idempotency.PostgreSql;
+namespace CourierLane.Idempotency.PostgreSql;
 
 public static class PostgreSqlIdempotencyExtensions
 {
@@ -24,7 +24,7 @@ public static class PostgreSqlIdempotencyExtensions
             NpgsqlDataSource.Create(provider.GetRequiredService<IOptions<PostgreSqlOptions>>().Value.ConnectionString));
         services.TryAddKeyedSingleton<IMessageDeduplicationStore>(ProviderName, (provider, _) => new PostgreSqlMessageStore(
             provider.GetRequiredKeyedService<NpgsqlDataSource>(ProviderName),
-            provider.GetRequiredService<IOptions<RabbitMessagingOptions>>().Value,
+            provider.GetRequiredService<IOptions<CourierLaneOptions>>().Value,
             provider.GetRequiredService<IOptions<PostgreSqlOptions>>().Value.KeyPrefix));
         services.AddHostedService<PostgreSqlMigration>();
         return services;
@@ -46,10 +46,10 @@ public static class PostgreSqlIdempotencyExtensions
 internal class PostgreSqlOptions
 {
     public string ConnectionString { get; set; } = "";
-    public string KeyPrefix { get; set; } = "messaging:idempotency:";
+    public string KeyPrefix { get; set; } = "courierlane:idempotency:";
 }
 
-internal class PostgreSqlMigration(IServiceProvider services, IOptions<RabbitMessagingOptions> options) : IHostedLifecycleService
+internal class PostgreSqlMigration(IServiceProvider services, IOptions<CourierLaneOptions> options) : IHostedLifecycleService
 {
     public async Task StartingAsync(CancellationToken cancellationToken)
     {
@@ -63,7 +63,7 @@ internal class PostgreSqlMigration(IServiceProvider services, IOptions<RabbitMes
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
         await using var command = new NpgsqlCommand("""
             SELECT pg_advisory_xact_lock(811435362916360161);
-            CREATE TABLE IF NOT EXISTS messaging_idempotency_v1 (
+            CREATE TABLE IF NOT EXISTS courierlane_idempotency_v1 (
                 scope text NOT NULL,
                 message_key text NOT NULL,
                 token text NOT NULL,
@@ -71,7 +71,7 @@ internal class PostgreSqlMigration(IServiceProvider services, IOptions<RabbitMes
                 expires timestamptz NOT NULL,
                 PRIMARY KEY (scope, message_key)
             );
-            CREATE INDEX IF NOT EXISTS messaging_idempotency_v1_expiry ON messaging_idempotency_v1(scope, expires);
+            CREATE INDEX IF NOT EXISTS courierlane_idempotency_v1_expiry ON courierlane_idempotency_v1(scope, expires);
             """, connection, transaction);
         await command.ExecuteNonQueryAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

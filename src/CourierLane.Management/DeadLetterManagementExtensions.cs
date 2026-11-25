@@ -6,15 +6,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Messaging.Management;
+namespace CourierLane.Management;
 
 public static class DeadLetterManagementExtensions
 {
-    private const string Read = "messaging.dlq.read";
-    private const string Payload = "messaging.dlq.payload";
-    private const string Replay = "messaging.dlq.replay";
-    private const string Archive = "messaging.dlq.archive";
-    private const string Discard = "messaging.dlq.discard";
+    private const string Read = "courierlane.dlq.read";
+    private const string Payload = "courierlane.dlq.payload";
+    private const string Replay = "courierlane.dlq.replay";
+    private const string Archive = "courierlane.dlq.archive";
+    private const string Discard = "courierlane.dlq.discard";
 
     public static IServiceCollection AddDeadLetterManagement(this IServiceCollection services, IConfiguration configuration, string authenticationScheme)
     {
@@ -35,7 +35,7 @@ public static class DeadLetterManagementExtensions
                 options.AddPolicy(policy, builder => builder
                     .AddAuthenticationSchemes(authenticationScheme)
                     .RequireAuthenticatedUser()
-                    .RequireClaim("messaging.dlq", policy)
+                    .RequireClaim("courierlane.dlq", policy)
                     .RequireAssertion(context => ReadActor(context.User) is { Length: > 0 and <= 256 }));
             }
         });

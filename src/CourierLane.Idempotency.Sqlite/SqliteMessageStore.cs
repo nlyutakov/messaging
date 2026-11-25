@@ -1,10 +1,10 @@
-using Messaging.Abstractions.Idempotency;
-using Messaging.RabbitMQ.Configuration;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.RabbitMQ.Configuration;
 using Microsoft.Data.Sqlite;
 
-namespace Messaging.Idempotency.Sqlite;
+namespace CourierLane.Idempotency.Sqlite;
 
-internal class SqliteMessageStore(string databasePath, string prefix, RabbitMessagingOptions options) : IMessageDeduplicationStore
+internal class SqliteMessageStore(string databasePath, string prefix, CourierLaneOptions options) : IMessageDeduplicationStore
 {
     private readonly string connectionString = MakeConnectionString(databasePath);
     private readonly string scope = $"{prefix.Length}:{prefix}{options.VirtualHost}";
@@ -29,7 +29,7 @@ internal class SqliteMessageStore(string databasePath, string prefix, RabbitMess
 
         var lease = new MessageLease(key, Guid.NewGuid().ToString("N"));
         await using var command = this.CreateCommand(connection, """
-            INSERT INTO messaging_idempotency_v1 (scope, message_key, token, completed, expires)
+            INSERT INTO courierlane_idempotency_v1 (scope, message_key, token, completed, expires)
             VALUES ($scope, $key, $token, 0, unixepoch('subsec') + $ttl)
             ON CONFLICT (scope, message_key) DO UPDATE SET
                 token = CASE WHEN expires <= unixepoch('subsec') THEN excluded.token ELSE token END,
@@ -63,7 +63,7 @@ internal class SqliteMessageStore(string databasePath, string prefix, RabbitMess
         await using var connection = new SqliteConnection(this.connectionString);
         await connection.OpenAsync(cancellationToken);
         await using var command = this.CreateCommand(connection, """
-            DELETE FROM messaging_idempotency_v1 WHERE scope = $scope AND message_key = $key AND token = $token AND completed = 0;
+            DELETE FROM courierlane_idempotency_v1 WHERE scope = $scope AND message_key = $key AND token = $token AND completed = 0;
             """, lease);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -73,7 +73,7 @@ internal class SqliteMessageStore(string databasePath, string prefix, RabbitMess
         await using var connection = new SqliteConnection(this.connectionString);
         await connection.OpenAsync(cancellationToken);
         await using var command = this.CreateCommand(connection, """
-            UPDATE messaging_idempotency_v1 SET completed = $completed, expires = unixepoch('subsec') + $ttl
+            UPDATE courierlane_idempotency_v1 SET completed = $completed, expires = unixepoch('subsec') + $ttl
             WHERE scope = $scope AND message_key = $key AND token = $token AND completed = 0 AND expires > unixepoch('subsec');
             """, lease);
         command.Parameters.AddWithValue("$completed", completed);
@@ -85,8 +85,8 @@ internal class SqliteMessageStore(string databasePath, string prefix, RabbitMess
     {
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            DELETE FROM messaging_idempotency_v1 WHERE scope = $scope AND message_key IN (
-                SELECT message_key FROM messaging_idempotency_v1 WHERE scope = $scope AND expires <= unixepoch('subsec')
+            DELETE FROM courierlane_idempotency_v1 WHERE scope = $scope AND message_key IN (
+                SELECT message_key FROM courierlane_idempotency_v1 WHERE scope = $scope AND expires <= unixepoch('subsec')
                 ORDER BY expires LIMIT 64
             );
             """;

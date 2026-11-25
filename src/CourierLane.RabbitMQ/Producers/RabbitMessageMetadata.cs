@@ -1,9 +1,9 @@
 using System.Text.Json;
-using Messaging.Abstractions.Producers;
+using CourierLane.Abstractions.Producers;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 
-namespace Messaging.RabbitMQ.Producers;
+namespace CourierLane.RabbitMQ.Producers;
 
 internal static class RabbitMessageMetadata
 {
@@ -18,10 +18,10 @@ internal static class RabbitMessageMetadata
             .Property("message-type", typeId)
             .ContentType("application/json")
             .MessageId(Validate(options?.MessageId, nameof(SendOptions.MessageId)) ?? Guid.NewGuid().ToString("N"))
-            .Property("messaging-timestamp", (options?.Timestamp ?? DateTimeOffset.UtcNow).ToUniversalTime().ToString("O"));
+            .Property("courierlane-timestamp", (options?.Timestamp ?? DateTimeOffset.UtcNow).ToUniversalTime().ToString("O"));
         if (Validate(options?.CorrelationId, nameof(SendOptions.CorrelationId)) is { } correlation)
         {
-            message.Property("messaging-correlation-id", correlation);
+            message.Property("courierlane-correlation-id", correlation);
             if (useNativeCorrelation)
             {
                 message.CorrelationId(correlation);
@@ -30,12 +30,12 @@ internal static class RabbitMessageMetadata
 
         if (Validate(options?.CausationId, nameof(SendOptions.CausationId)) is { } causation)
         {
-            message.Property("messaging-causation-id", causation);
+            message.Property("courierlane-causation-id", causation);
         }
 
         if (Validate(options?.Source, nameof(SendOptions.Source)) is { } source)
         {
-            message.Property("messaging-source", source);
+            message.Property("courierlane-source", source);
         }
 
         if (options?.Headers is { Count: > 0 } headers)
@@ -52,14 +52,14 @@ internal static class RabbitMessageMetadata
                 headerNames.Add(name);
             }
 
-            message.Property("messaging-header-names", JsonSerializer.Serialize(headerNames));
+            message.Property("courierlane-header-names", JsonSerializer.Serialize(headerNames));
         }
 
         return message;
     }
 
     internal static bool IsReservedHeader(string name) =>
-        Reserved.Contains(name) || name.StartsWith("messaging-", StringComparison.OrdinalIgnoreCase) ||
+        Reserved.Contains(name) || name.StartsWith("courierlane-", StringComparison.OrdinalIgnoreCase) ||
         name.StartsWith("x-", StringComparison.OrdinalIgnoreCase);
 
     private static string? Validate(string? value, string name)

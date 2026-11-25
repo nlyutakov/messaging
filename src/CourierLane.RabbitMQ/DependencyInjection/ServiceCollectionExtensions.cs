@@ -1,29 +1,29 @@
-using Messaging.Abstractions.Handlers;
-using Messaging.Abstractions.Idempotency;
-using Messaging.Abstractions.Producers;
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.Consumers;
-using Messaging.RabbitMQ.Dispatching;
-using Messaging.RabbitMQ.Idempotency;
-using Messaging.RabbitMQ.Producers;
-using Messaging.RabbitMQ.Retry;
-using Messaging.RabbitMQ.Rpc;
-using Messaging.RabbitMQ.Topology;
+using CourierLane.Abstractions.Handlers;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.Abstractions.Producers;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Consumers;
+using CourierLane.RabbitMQ.Dispatching;
+using CourierLane.RabbitMQ.Idempotency;
+using CourierLane.RabbitMQ.Producers;
+using CourierLane.RabbitMQ.Retry;
+using CourierLane.RabbitMQ.Rpc;
+using CourierLane.RabbitMQ.Topology;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-namespace Messaging.RabbitMQ.DependencyInjection;
+namespace CourierLane.RabbitMQ.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
-    private const string ListenerKey = "Messaging.Listeners";
+    private const string ListenerKey = "CourierLane.Listeners";
 
-    public static IServiceCollection AddRabbitMessaging(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddCourierLane(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<RabbitMessagingOptions>()
+        services.AddOptions<CourierLaneOptions>()
             .Bind(configuration)
             .Validate(o => !string.IsNullOrWhiteSpace(o.Host), "RabbitMQ Host is required.")
             .Validate(o => o.Port is > 0 and <= 65535, "Invalid RabbitMQ port.")
@@ -65,7 +65,7 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    public static IServiceCollection AddRabbitMessageContracts(this IServiceCollection services, Action<MessageTypeRegistry> configure)
+    public static IServiceCollection AddCourierLaneContracts(this IServiceCollection services, Action<MessageTypeRegistry> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
 
@@ -77,7 +77,7 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    public static IServiceCollection AddRabbitListener(this IServiceCollection services, Action<RabbitListenerBuilder> configure)
+    public static IServiceCollection AddCourierLaneListener(this IServiceCollection services, Action<RabbitListenerBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
 
@@ -88,7 +88,7 @@ public static class ServiceCollectionExtensions
         return RegisterListeners(services, builder.Build());
     }
 
-    public static IServiceCollection AddRabbitEventListener(this IServiceCollection services, Action<RabbitEventListenerBuilder> configure)
+    public static IServiceCollection AddCourierLaneEventListener(this IServiceCollection services, Action<RabbitEventListenerBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
         var builder = new RabbitEventListenerBuilder();
@@ -142,7 +142,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<RabbitQueueConsumer>(provider => new RabbitQueueConsumer(
             provider.GetRequiredService<RabbitConnectionManager>(),
             provider.GetRequiredService<IMessageDispatcher>(),
-            provider.GetRequiredService<IOptions<RabbitMessagingOptions>>(),
+            provider.GetRequiredService<IOptions<CourierLaneOptions>>(),
             provider.GetRequiredService<ILogger<RabbitQueueConsumer>>(),
             provider.GetRequiredService<ILoggerFactory>(),
             provider.GetRequiredService<IRetryExceptionClassifier>(),
@@ -158,7 +158,7 @@ public static class ServiceCollectionExtensions
 
     private static IMessageDeduplicationStore ResolveDeduplicationStore(IServiceProvider provider)
     {
-        var options = provider.GetRequiredService<IOptions<RabbitMessagingOptions>>().Value;
+        var options = provider.GetRequiredService<IOptions<CourierLaneOptions>>().Value;
         return provider.GetRequiredKeyedService<IMessageDeduplicationStore>(options.Idempotency.Provider);
     }
 }

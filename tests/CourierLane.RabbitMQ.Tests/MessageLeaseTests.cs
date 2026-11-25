@@ -1,16 +1,16 @@
 using System.Reflection;
-using Messaging.Abstractions.Idempotency;
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Consumers;
-using Messaging.RabbitMQ.Dispatching;
-using Messaging.RabbitMQ.Idempotency;
-using Messaging.RabbitMQ.Retry;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Consumers;
+using CourierLane.RabbitMQ.Dispatching;
+using CourierLane.RabbitMQ.Idempotency;
+using CourierLane.RabbitMQ.Retry;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using RabbitMQ.AMQP.Client;
 using Xunit;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
 public class MessageLeaseTests
 {
@@ -189,15 +189,15 @@ public class MessageLeaseTests
         Assert.True(await store.MarkCompletedAsync(current));
     }
 
-    private static IOptions<RabbitMessagingOptions> CreateOptions()
+    private static IOptions<CourierLaneOptions> CreateOptions()
     {
-        var options = new RabbitMessagingOptions();
+        var options = new CourierLaneOptions();
         options.Consumer.EnableIdempotency = true;
         options.Idempotency.ProcessingTimeout = TimeSpan.FromMilliseconds(900);
         return Microsoft.Extensions.Options.Options.Create(options);
     }
 
-    private static RabbitQueueConsumer CreateConsumer(IOptions<RabbitMessagingOptions> options, Store store, Func<CancellationToken, Task> dispatch)
+    private static RabbitQueueConsumer CreateConsumer(IOptions<CourierLaneOptions> options, Store store, Func<CancellationToken, Task> dispatch)
     {
         return new RabbitQueueConsumer(null!, new Dispatcher(dispatch), options, NullLogger<RabbitQueueConsumer>.Instance, NullLoggerFactory.Instance, new DefaultRetryExceptionClassifier(), store);
     }
@@ -244,7 +244,7 @@ public class MessageLeaseTests
         }
     }
 
-    private class Store(IOptions<RabbitMessagingOptions> options) : IMessageDeduplicationStore
+    private class Store(IOptions<CourierLaneOptions> options) : IMessageDeduplicationStore
     {
         private readonly InMemoryMessageDeduplicationStore inner = new(options);
         private int renewals;

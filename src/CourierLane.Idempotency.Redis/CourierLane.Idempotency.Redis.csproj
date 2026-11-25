@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Messaging.RabbitMQ/Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="../CourierLane.RabbitMQ/CourierLane.RabbitMQ.csproj" />
     <PackageReference Include="StackExchange.Redis" Version="2.13.23" />
   </ItemGroup>
 </Project>

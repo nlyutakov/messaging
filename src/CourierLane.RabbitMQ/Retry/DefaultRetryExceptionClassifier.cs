@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Messaging.Abstractions.Exceptions;
-using Messaging.RabbitMQ.Dispatching;
+using CourierLane.Abstractions.Exceptions;
+using CourierLane.RabbitMQ.Dispatching;
 
-namespace Messaging.RabbitMQ.Retry;
+namespace CourierLane.RabbitMQ.Retry;
 
 public class DefaultRetryExceptionClassifier : IRetryExceptionClassifier
 {

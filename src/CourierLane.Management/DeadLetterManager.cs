@@ -1,11 +1,11 @@
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.Producers;
-using Messaging.Abstractions.Producers;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Producers;
+using CourierLane.Abstractions.Producers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.AMQP.Client;
 
-namespace Messaging.Management;
+namespace CourierLane.Management;
 
 internal class DeadLetterManager(DeadLetterArchive archive, RabbitConnectionManager connections, IOptions<DeadLetterOptions> options, ILogger<DeadLetterManager> logger) : IDeadLetterManager
 {
@@ -81,10 +81,10 @@ internal class DeadLetterManager(DeadLetterArchive archive, RabbitConnectionMana
             var message = RabbitMessageMetadata.Create(payload, type, new SendOptions
             {
                 MessageId = messageId,
-                CorrelationId = ReadHeader(entry, "messaging-correlation-id") ?? entry.CorrelationId,
-                CausationId = ReadHeader(entry, "messaging-causation-id"),
-                Source = ReadHeader(entry, "messaging-source"),
-                Timestamp = DateTimeOffset.TryParse(ReadHeader(entry, "messaging-timestamp"), out var timestamp) ? timestamp : null,
+                CorrelationId = ReadHeader(entry, "courierlane-correlation-id") ?? entry.CorrelationId,
+                CausationId = ReadHeader(entry, "courierlane-causation-id"),
+                Source = ReadHeader(entry, "courierlane-source"),
+                Timestamp = DateTimeOffset.TryParse(ReadHeader(entry, "courierlane-timestamp"), out var timestamp) ? timestamp : null,
                 Headers = entry.Headers.Where(header => !RabbitMessageMetadata.IsReservedHeader(header.Key)).ToDictionary()
             })
                 .Property(DeadLetterIngestionService.ReplayCountProperty, row.ReplayCount + 1)

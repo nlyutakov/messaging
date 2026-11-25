@@ -1,4 +1,4 @@
-namespace Messaging.RabbitMQ.Dispatching;
+namespace CourierLane.RabbitMQ.Dispatching;
 
 public class UnknownMessageTypeException : Exception
 {

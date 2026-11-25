@@ -1,13 +1,13 @@
-using Messaging.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
-namespace Messaging.RabbitMQ.Connections;
+namespace CourierLane.RabbitMQ.Connections;
 
 public class RabbitConnectionManager : IAsyncDisposable
 {
-    private readonly RabbitMessagingOptions options;
+    private readonly CourierLaneOptions options;
 
     private readonly ILogger<RabbitConnectionManager> logger;
 
@@ -20,7 +20,7 @@ public class RabbitConnectionManager : IAsyncDisposable
     private bool disposed;
 
     public bool IsConnected => Volatile.Read(ref this.connection)?.State == State.Open;
-    public RabbitConnectionManager(IOptions<RabbitMessagingOptions> options, ILogger<RabbitConnectionManager> logger)
+    public RabbitConnectionManager(IOptions<CourierLaneOptions> options, ILogger<RabbitConnectionManager> logger)
     {
         this.options = options.Value;
         this.logger = logger;

@@ -4,9 +4,9 @@
     <VersionSuffix>preview.1</VersionSuffix>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Messaging.Abstractions' Or '$(MSBuildProjectName)' == 'Messaging.RabbitMQ' Or '$(MSBuildProjectName)' == 'Messaging.Idempotency.Redis' Or '$(MSBuildProjectName)' == 'Messaging.Idempotency.PostgreSql' Or '$(MSBuildProjectName)' == 'Messaging.Idempotency.Sqlite' Or '$(MSBuildProjectName)' == 'Messaging.Outbox.PostgreSql' Or '$(MSBuildProjectName)' == 'Messaging.Management'">
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'CourierLane.Abstractions' Or '$(MSBuildProjectName)' == 'CourierLane.RabbitMQ' Or '$(MSBuildProjectName)' == 'CourierLane.Idempotency.Redis' Or '$(MSBuildProjectName)' == 'CourierLane.Idempotency.PostgreSql' Or '$(MSBuildProjectName)' == 'CourierLane.Idempotency.Sqlite' Or '$(MSBuildProjectName)' == 'CourierLane.Outbox.PostgreSql' Or '$(MSBuildProjectName)' == 'CourierLane.Management'">
     <IsPackable>true</IsPackable>
-    <PackageId>$(MSBuildProjectName.Replace('Messaging.', 'CourierLane.'))</PackageId>
+    <PackageId>$(MSBuildProjectName)</PackageId>
     <Description>CourierLane messaging components for .NET 10 and RabbitMQ AMQP 1.0.</Description>
     <PackageTags>dotnet;messaging;rabbitmq;amqp</PackageTags>
     <RepositoryUrl>https://github.com/nlyutakov/messaging</RepositoryUrl>

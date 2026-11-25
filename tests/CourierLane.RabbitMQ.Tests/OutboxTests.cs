@@ -1,17 +1,17 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
-using Messaging.Abstractions.Producers;
-using Messaging.Outbox.PostgreSql;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.DependencyInjection;
-using Messaging.RabbitMQ.Producers;
+using CourierLane.Abstractions.Producers;
+using CourierLane.Outbox.PostgreSql;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.DependencyInjection;
+using CourierLane.RabbitMQ.Producers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
 using RabbitMQ.AMQP.Client;
 using Xunit;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
 public class OutboxTests
 {
@@ -21,14 +21,14 @@ public class OutboxTests
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(40));
         var ct = deadline.Token;
         var scope = $"test-{Guid.NewGuid():N}";
-        var queueName = $"messaging.outbox.{Guid.NewGuid():N}";
+        var queueName = $"courierlane.outbox.{Guid.NewGuid():N}";
         var builder = Host.CreateApplicationBuilder();
-        var postgres = Environment.GetEnvironmentVariable("MESSAGING_TEST_POSTGRESQL")!;
+        var postgres = Environment.GetEnvironmentVariable("COURIERLANE_TEST_POSTGRESQL")!;
         builder.Configuration.AddRabbitSettings("Rabbit");
         builder.Configuration["Outbox:ConnectionString"] = postgres;
         builder.Configuration["Outbox:Scope"] = scope;
-        builder.Services.AddRabbitMessaging(builder.Configuration.GetSection("Rabbit"));
-        builder.Services.AddRabbitMessageContracts(contracts => contracts.Register<OrderCreated>("orders.created.v1"));
+        builder.Services.AddCourierLane(builder.Configuration.GetSection("Rabbit"));
+        builder.Services.AddCourierLaneContracts(contracts => contracts.Register<OrderCreated>("orders.created.v1"));
         builder.Services.AddPostgreSqlOutbox(builder.Configuration.GetSection("Outbox"));
         var host = builder.Build();
         await using var ownedHost = (IAsyncDisposable)host;
@@ -55,7 +55,7 @@ public class OutboxTests
         {
             await WriteBusinessOrderAsync(transaction, 2, ct);
             await writer.EnqueueCommandAsync(transaction, queueName, new OrderCreated(2), new SendOptions { MessageId = "outbox-stable-id" }, ct);
-            await using var observer = dataSource.CreateCommand("SELECT COUNT(*) FROM messaging_outbox_v1 WHERE scope = @scope;");
+            await using var observer = dataSource.CreateCommand("SELECT COUNT(*) FROM courierlane_outbox_v1 WHERE scope = @scope;");
             observer.Parameters.AddWithValue("scope", scope);
             Assert.Equal(0L, await observer.ExecuteScalarAsync(ct));
             await transaction.CommitAsync(ct);
@@ -85,7 +85,7 @@ public class OutboxTests
             await publisher.PublishSerializedAsync(claim.Destination, claim.Type, claim.Payload, JsonSerializer.Deserialize<SendOptions>(claim.Metadata), claim.IsEvent, ct);
 
             // Force claim expiry after a confirm without recording completion in PostgreSQL.
-            await using var expire = dataSource.CreateCommand("UPDATE messaging_outbox_v1 SET claimed_until = clock_timestamp() WHERE id = @id;");
+            await using var expire = dataSource.CreateCommand("UPDATE courierlane_outbox_v1 SET claimed_until = clock_timestamp() WHERE id = @id;");
             expire.Parameters.AddWithValue("id", claim.Id);
             await expire.ExecuteNonQueryAsync(ct);
             await host.StartAsync(ct);
@@ -113,7 +113,7 @@ public class OutboxTests
 
     private static async Task<bool> IsPublishedAsync(NpgsqlDataSource source, Guid id, CancellationToken cancellationToken)
     {
-        await using var command = source.CreateCommand("SELECT published_at IS NOT NULL FROM messaging_outbox_v1 WHERE id = @id;");
+        await using var command = source.CreateCommand("SELECT published_at IS NOT NULL FROM courierlane_outbox_v1 WHERE id = @id;");
         command.Parameters.AddWithValue("id", id);
         return await command.ExecuteScalarAsync(cancellationToken) is true;
     }
@@ -124,10 +124,10 @@ public class OutboxTests
     {
         public OutboxFactAttribute()
         {
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MESSAGING_TEST_POSTGRESQL")) ||
-                string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MESSAGING_TEST_RABBITMQ")))
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("COURIERLANE_TEST_POSTGRESQL")) ||
+                string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("COURIERLANE_TEST_RABBITMQ")))
             {
-                this.Skip = "Set MESSAGING_TEST_POSTGRESQL and MESSAGING_TEST_RABBITMQ to local test services.";
+                this.Skip = "Set COURIERLANE_TEST_POSTGRESQL and COURIERLANE_TEST_RABBITMQ to local test services.";
             }
         }
     }

@@ -1,12 +1,12 @@
-using Messaging.Abstractions.Handlers;
-using Messaging.RabbitMQ.DependencyInjection;
+using CourierLane.Abstractions.Handlers;
+using CourierLane.RabbitMQ.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddRabbitMessaging(builder.Configuration.GetSection("RabbitMessaging"));
+builder.Services.AddCourierLane(builder.Configuration.GetSection("CourierLane"));
 
-builder.Services.AddRabbitListener(listener =>
+builder.Services.AddCourierLaneListener(listener =>
 {
     listener.Listen("orders.commands.v2")
         .Handle<CreateOrderCommand, CreateOrderHandler>("orders.create.v1");

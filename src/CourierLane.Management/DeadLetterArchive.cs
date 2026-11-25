@@ -2,7 +2,7 @@ using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 
-namespace Messaging.Management;
+namespace CourierLane.Management;
 
 internal class DeadLetterArchive(IOptions<DeadLetterOptions> options)
 {

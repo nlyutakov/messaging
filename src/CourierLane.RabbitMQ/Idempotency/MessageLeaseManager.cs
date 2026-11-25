@@ -1,6 +1,6 @@
-using Messaging.Abstractions.Idempotency;
+using CourierLane.Abstractions.Idempotency;
 using Microsoft.Extensions.Logging;
-namespace Messaging.RabbitMQ.Idempotency;
+namespace CourierLane.RabbitMQ.Idempotency;
 
 internal class MessageLeaseManager
 {

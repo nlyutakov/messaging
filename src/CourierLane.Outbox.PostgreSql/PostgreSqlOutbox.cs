@@ -1,11 +1,11 @@
 using System.Text.Json;
-using Messaging.Abstractions.Producers;
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Producers;
+using CourierLane.Abstractions.Producers;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Producers;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
-namespace Messaging.Outbox.PostgreSql;
+namespace CourierLane.Outbox.PostgreSql;
 
 public class PostgreSqlOutbox(MessageTypeRegistry contracts, IOptions<PostgreSqlOutboxOptions> options)
 {
@@ -37,7 +37,7 @@ public class PostgreSqlOutbox(MessageTypeRegistry contracts, IOptions<PostgreSql
         RabbitMessageMetadata.Create(payload, type, metadata);
 
         await using var command = new NpgsqlCommand("""
-            INSERT INTO messaging_outbox_v1 (id, scope, destination, type, is_event, payload, metadata)
+            INSERT INTO courierlane_outbox_v1 (id, scope, destination, type, is_event, payload, metadata)
             VALUES (@id, @scope, @destination, @type, @event, @payload, @metadata);
             """, connection, transaction);
         command.Parameters.AddWithValue("id", Guid.NewGuid());

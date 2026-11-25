@@ -1,8 +1,8 @@
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Diagnostics;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Diagnostics;
 using Microsoft.Extensions.Logging;
 
-namespace Messaging.RabbitMQ.Retry;
+namespace CourierLane.RabbitMQ.Retry;
 
 public class RetryExecutor
 {
@@ -54,7 +54,7 @@ public class RetryExecutor
                 }
 
                 var delay = this.CalculateDelay(attempt);
-                MessagingDiagnostics.Retries.Add(1);
+                CourierLaneDiagnostics.Retries.Add(1);
 
                 this.logger.LogWarning(ex, "Message processing failed on attempt {Attempt}/{MaxAttempts}; retrying in {Delay}",
                     attempt, this.options.MaxAttempts, delay);

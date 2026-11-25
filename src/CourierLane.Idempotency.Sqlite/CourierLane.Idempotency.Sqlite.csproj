@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Messaging.RabbitMQ/Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="../CourierLane.RabbitMQ/CourierLane.RabbitMQ.csproj" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
   </ItemGroup>
 </Project>

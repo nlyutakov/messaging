@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Messaging.RabbitMQ/Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="../CourierLane.RabbitMQ/CourierLane.RabbitMQ.csproj" />
     <PackageReference Include="Npgsql" Version="10.0.4" />
   </ItemGroup>
 </Project>

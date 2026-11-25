@@ -1,5 +1,5 @@
-using Messaging.Abstractions.Exceptions;
-namespace Messaging.RabbitMQ.Rpc;
+using CourierLane.Abstractions.Exceptions;
+namespace CourierLane.RabbitMQ.Rpc;
 
 public static class RpcTimeoutExecutor
 {

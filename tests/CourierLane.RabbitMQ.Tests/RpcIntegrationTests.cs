@@ -1,31 +1,41 @@
-using Messaging.Abstractions.Exceptions;
-using Messaging.Abstractions.Handlers;
-using Messaging.Abstractions.Producers;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.DependencyInjection;
-using Messaging.RabbitMQ.Rpc;
-using Messaging.RabbitMQ.Topology;
+using CourierLane.Abstractions.Exceptions;
+using CourierLane.Abstractions.Handlers;
+using CourierLane.Abstractions.Producers;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.DependencyInjection;
+using CourierLane.RabbitMQ.Rpc;
+using CourierLane.RabbitMQ.Topology;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using CourierLane.RabbitMQ.Tests.Infrastructure;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
+[Collection(IntegrationTestCollection.Name)]
+[Trait("Category", "Integration")]
 public class RpcIntegrationTests
 {
-    [RabbitFact]
+    private readonly IntegrationTestFixture fixture;
+
+    public RpcIntegrationTests(IntegrationTestFixture fixture)
+    {
+        this.fixture = fixture;
+    }
+
+    [Fact]
     public async Task RecoversAfterTimeoutAndCancellationAndPropagatesRemoteFailure()
     {
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(25));
         var ct = deadline.Token;
-        var queue = $"messaging.rpc.{Guid.NewGuid():N}";
+        var queue = $"courierlane.rpc.{Guid.NewGuid():N}";
         var configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
-        configuration.AddRabbitSettings("Rabbit");
+        configuration.AddRabbitSettings("Rabbit", this.fixture);
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddRabbitMessaging(configuration.GetSection("Rabbit"));
-        services.AddRabbitMessageContracts(contracts => contracts.Register<Query>("test.rpc.v1"));
-        services.AddRabbitListener(listener => listener.Listen(queue).Handle<Query, Result, Handler>("test.rpc.v1"));
+        services.AddCourierLane(configuration.GetSection("Rabbit"));
+        services.AddCourierLaneContracts(contracts => contracts.Register<Query>("test.rpc.v1"));
+        services.AddCourierLaneListener(listener => listener.Listen(queue).Handle<Query, Result, Handler>("test.rpc.v1"));
         var gate = new TestGate();
         services.AddSingleton(gate);
         await using var provider = services.BuildServiceProvider();
@@ -89,17 +99,6 @@ public class RpcIntegrationTests
             }
 
             return new Result(request.Value);
-        }
-    }
-
-    private class RabbitFactAttribute : FactAttribute
-    {
-        public RabbitFactAttribute()
-        {
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MESSAGING_TEST_RABBITMQ")))
-            {
-                this.Skip = "Set MESSAGING_TEST_RABBITMQ to a local RabbitMQ host.";
-            }
         }
     }
 }

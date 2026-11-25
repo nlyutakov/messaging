@@ -1,5 +1,5 @@
-using Messaging.Abstractions.Handlers;
-namespace Messaging.RabbitMQ.Configuration;
+using CourierLane.Abstractions.Handlers;
+namespace CourierLane.RabbitMQ.Configuration;
 
 public record HandlerRegistration(string MessageTypeId, Type MessageType, Type HandlerType, Type? ResponseType);
 public class QueueRegistration

@@ -1,4 +1,4 @@
-namespace Messaging.RabbitMQ.Options;
+namespace CourierLane.RabbitMQ.Options;
 
 public class IdempotencyOptions
 {

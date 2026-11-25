@@ -1,15 +1,15 @@
-using Messaging.Management;
+using CourierLane.Management;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
 public class DeadLetterArchiveTests
 {
     [Fact]
     public async Task ReopenIsIdempotentAndOnlyOneReplayClaimCanWin()
     {
-        var folder = Directory.CreateTempSubdirectory("messaging-dlq-");
+        var folder = Directory.CreateTempSubdirectory("courierlane-dlq-");
         try
         {
             var options = Microsoft.Extensions.Options.Options.Create(new DeadLetterOptions { DatabasePath = Path.Combine(folder.FullName, "archive.db") });

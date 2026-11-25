@@ -1,10 +1,10 @@
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Rpc;
-using Messaging.RabbitMQ.Topology;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Rpc;
+using CourierLane.RabbitMQ.Topology;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.AMQP.Client;
-namespace Messaging.RabbitMQ.Consumers;
+namespace CourierLane.RabbitMQ.Consumers;
 
 public class MessageListenerService : BackgroundService
 {

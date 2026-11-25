@@ -1,32 +1,32 @@
 using System.Diagnostics;
-using Messaging.RabbitMQ.Diagnostics;
+using CourierLane.RabbitMQ.Diagnostics;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
-public class MessagingDiagnosticsTests
+public class CourierLaneDiagnosticsTests
 {
     [Fact]
     public void TraceContextSurvivesTheMessageBoundary()
     {
         using var listener = new ActivityListener
         {
-            ShouldListenTo = source => source.Name == MessagingDiagnostics.SourceName,
+            ShouldListenTo = source => source.Name == CourierLaneDiagnostics.SourceName,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded
         };
         ActivitySource.AddActivityListener(listener);
-        using var publisher = MessagingDiagnostics.Activities.StartActivity("test publish", ActivityKind.Producer);
+        using var publisher = CourierLaneDiagnostics.Activities.StartActivity("test publish", ActivityKind.Producer);
         Assert.NotNull(publisher);
-        publisher.TraceStateString = "messaging=test";
+        publisher.TraceStateString = "courierlane=test";
         var message = new AmqpMessage(new byte[] { 1, 2, 3 });
-        MessagingDiagnostics.InjectTrace(message);
+        CourierLaneDiagnostics.InjectTrace(message);
 
         publisher.Stop();
-        using var consumer = MessagingDiagnostics.StartProcessing(message, "test receive", "orders");
+        using var consumer = CourierLaneDiagnostics.StartProcessing(message, "test receive", "orders");
         Assert.NotNull(consumer);
         Assert.Equal(publisher.TraceId, consumer.TraceId);
         Assert.Equal(publisher.SpanId, consumer.ParentSpanId);
-        Assert.Equal("messaging=test", consumer.TraceStateString);
+        Assert.Equal("courierlane=test", consumer.TraceStateString);
     }
 }

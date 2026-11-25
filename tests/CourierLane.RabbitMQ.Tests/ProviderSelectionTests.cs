@@ -1,13 +1,14 @@
-using Messaging.Abstractions.Idempotency;
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.DependencyInjection;
-using Messaging.RabbitMQ.Idempotency;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.DependencyInjection;
+using CourierLane.RabbitMQ.Idempotency;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
+using CourierLane.Idempotency.Redis;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
 public class ProviderSelectionTests
 {
@@ -55,7 +56,7 @@ public class ProviderSelectionTests
     public void InvalidOptionsFailAtStartup(string key, string value)
     {
         var registrations = new ServiceCollection();
-        registrations.AddRabbitMessaging(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [key] = value }).Build());
+        registrations.AddCourierLane(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [key] = value }).Build());
         using var services = registrations.BuildServiceProvider();
 
         Assert.Throws<OptionsValidationException>(() => services.GetRequiredService<IStartupValidator>().Validate());
@@ -65,8 +66,26 @@ public class ProviderSelectionTests
     public void InvalidQueueOverrideFailsDuringRegistration()
     {
         var error = Assert.Throws<InvalidOperationException>(() =>
-            new ServiceCollection().AddRabbitListener(builder => builder.Listen("orders", options => options.Credit = 0)));
+            new ServiceCollection().AddCourierLaneListener(builder => builder.Listen("orders", options => options.Credit = 0)));
         Assert.Contains("must be positive", error.Message);
+    }
+
+    [Fact]
+    public void MissingRedisConnectionStringFailsStartup()
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Idempotency:Provider"] = "Redis"
+        }).Build();
+
+        using var provider = new ServiceCollection()
+            .AddRedisIdempotency(config.GetSection("Idempotency:Redis"))
+            .AddCourierLane(config)
+            .BuildServiceProvider();
+
+        var error = Assert.Throws<OptionsValidationException>(() => provider.GetRequiredService<IStartupValidator>().Validate());
+
+        Assert.Contains("ConnectionString", error.Message);
     }
 
     private static IServiceCollection CreateServices(string? name = null)
@@ -77,6 +96,6 @@ public class ProviderSelectionTests
             settings["Idempotency:Provider"] = name;
         }
 
-        return new ServiceCollection().AddRabbitMessaging(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());
+        return new ServiceCollection().AddCourierLane(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());
     }
 }

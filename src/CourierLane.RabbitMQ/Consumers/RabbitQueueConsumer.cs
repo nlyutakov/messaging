@@ -1,15 +1,15 @@
 using System.Diagnostics;
-using Messaging.Abstractions.Idempotency;
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.Dispatching;
-using Messaging.RabbitMQ.Diagnostics;
-using Messaging.RabbitMQ.Idempotency;
-using Messaging.RabbitMQ.Retry;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Dispatching;
+using CourierLane.RabbitMQ.Diagnostics;
+using CourierLane.RabbitMQ.Idempotency;
+using CourierLane.RabbitMQ.Retry;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.AMQP.Client;
-namespace Messaging.RabbitMQ.Consumers;
+namespace CourierLane.RabbitMQ.Consumers;
 
 public class RabbitQueueConsumer
 {
@@ -17,7 +17,7 @@ public class RabbitQueueConsumer
 
     private readonly IMessageDispatcher dispatcher;
 
-    private readonly RabbitMessagingOptions options;
+    private readonly CourierLaneOptions options;
 
     private readonly ILogger<RabbitQueueConsumer> logger;
 
@@ -27,7 +27,7 @@ public class RabbitQueueConsumer
 
     private readonly MessageLeaseManager? leaseManager;
 
-    public RabbitQueueConsumer(RabbitConnectionManager connections, IMessageDispatcher dispatcher, IOptions<RabbitMessagingOptions> options, ILogger<RabbitQueueConsumer> logger, ILoggerFactory loggerFactory, IRetryExceptionClassifier retryExceptionClassifier, IMessageDeduplicationStore deduplicationStore)
+    public RabbitQueueConsumer(RabbitConnectionManager connections, IMessageDispatcher dispatcher, IOptions<CourierLaneOptions> options, ILogger<RabbitQueueConsumer> logger, ILoggerFactory loggerFactory, IRetryExceptionClassifier retryExceptionClassifier, IMessageDeduplicationStore deduplicationStore)
     {
         this.connections = connections;
         this.dispatcher = dispatcher;
@@ -80,7 +80,7 @@ public class RabbitQueueConsumer
     }
     internal async Task ProcessMessageAsync(string queueName, IContext context, IMessage message, CancellationToken cancellationToken, bool includeFailureReason = false)
     {
-        using var activity = MessagingDiagnostics.StartProcessing(message, "process", queueName);
+        using var activity = CourierLaneDiagnostics.StartProcessing(message, "process", queueName);
         var started = Stopwatch.GetTimestamp();
         var outcome = "discarded";
         try
@@ -122,7 +122,7 @@ public class RabbitQueueConsumer
         }
         catch (MessageLeaseException ex)
         {
-            MessagingDiagnostics.LeaseFailures.Add(1);
+            CourierLaneDiagnostics.LeaseFailures.Add(1);
             this.logger.LogWarning(ex, "Message lease failed on {Queue}; requeuing", queueName);
 
             try
@@ -150,8 +150,8 @@ public class RabbitQueueConsumer
         finally
         {
             var tag = new KeyValuePair<string, object?>("outcome", outcome);
-            MessagingDiagnostics.Processed.Add(1, tag);
-            MessagingDiagnostics.ProcessDuration.Record(Stopwatch.GetElapsedTime(started).TotalMilliseconds, tag);
+            CourierLaneDiagnostics.Processed.Add(1, tag);
+            CourierLaneDiagnostics.ProcessDuration.Record(Stopwatch.GetElapsedTime(started).TotalMilliseconds, tag);
             if (outcome == "discarded")
             {
                 activity?.SetStatus(ActivityStatusCode.Error);
@@ -163,7 +163,7 @@ public class RabbitQueueConsumer
     {
         if (includeFailureReason)
         {
-            context.Discard(new Dictionary<string, object> { ["x-opt-messaging-failure"] = reason });
+            context.Discard(new Dictionary<string, object> { ["x-opt-courierlane-failure"] = reason });
         }
         else
         {
@@ -189,7 +189,7 @@ public class RabbitQueueConsumer
 
             if (response.Result == MessageAcquireResult.AlreadyCompleted)
             {
-                MessagingDiagnostics.Duplicates.Add(1);
+                CourierLaneDiagnostics.Duplicates.Add(1);
                 this.logger.LogInformation("Skipping duplicate message {MessageId} on {Queue}", messageId, queueName);
                 return;
             }

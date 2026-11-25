@@ -5,10 +5,10 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	<ItemGroup>
-		<InternalsVisibleTo Include="Messaging.RabbitMQ.Tests" />
-		<InternalsVisibleTo Include="Messaging.Management" />
-		<InternalsVisibleTo Include="Messaging.Outbox.PostgreSql" />
-		<ProjectReference Include="../Messaging.Abstractions/Messaging.Abstractions.csproj"/>
+		<InternalsVisibleTo Include="CourierLane.RabbitMQ.Tests" />
+		<InternalsVisibleTo Include="CourierLane.Management" />
+		<InternalsVisibleTo Include="CourierLane.Outbox.PostgreSql" />
+		<ProjectReference Include="../CourierLane.Abstractions/CourierLane.Abstractions.csproj"/>
 		<PackageReference Include="RabbitMQ.AMQP.Client" Version="1.*"/>
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.*"/>
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.*"/>

@@ -1,9 +1,9 @@
 using System.Reflection;
 using System.Text.Json;
-using Messaging.Abstractions.Handlers;
-using Messaging.RabbitMQ.Configuration;
+using CourierLane.Abstractions.Handlers;
+using CourierLane.RabbitMQ.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-namespace Messaging.RabbitMQ.Dispatching;
+namespace CourierLane.RabbitMQ.Dispatching;
 
 public class MessageDispatcher : IMessageDispatcher
 {

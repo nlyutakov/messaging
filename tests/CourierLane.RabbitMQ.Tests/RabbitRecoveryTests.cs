@@ -1,41 +1,49 @@
 using System.Net;
 using System.Net.Sockets;
-using Messaging.Abstractions.Handlers;
-using Messaging.Abstractions.Producers;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.Consumers;
-using Messaging.RabbitMQ.DependencyInjection;
+using CourierLane.Abstractions.Handlers;
+using CourierLane.Abstractions.Producers;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Consumers;
+using CourierLane.RabbitMQ.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
+using CourierLane.RabbitMQ.Tests.Infrastructure;
 
-namespace Messaging.RabbitMQ.Tests;
+namespace CourierLane.RabbitMQ.Tests;
 
+[Collection(IntegrationTestCollection.Name)]
+[Trait("Category", "Integration")]
 public class RabbitRecoveryTests
 {
-    [RecoveryFact]
+    private readonly IntegrationTestFixture fixture;
+
+    public RabbitRecoveryTests(IntegrationTestFixture fixture)
+    {
+        this.fixture = fixture;
+    }
+
+    [Fact]
     public async Task BroadcastSubscriptionRecoversAfterTransportDisconnect()
     {
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(45));
         var ct = deadline.Token;
-        var exchange = $"messaging.recovery.{Guid.NewGuid():N}";
+        var exchange = $"courierlane.recovery.{Guid.NewGuid():N}";
         var publisherBuilder = Host.CreateApplicationBuilder();
-        publisherBuilder.Configuration.AddRabbitSettings("Rabbit");
-        publisherBuilder.Services.AddRabbitMessaging(publisherBuilder.Configuration.GetSection("Rabbit"));
-        publisherBuilder.Services.AddRabbitMessageContracts(contracts => contracts.Register<RecoveryEvent>("test.recovery.v1"));
+        publisherBuilder.Configuration.AddRabbitSettings("Rabbit", this.fixture);
+        publisherBuilder.Services.AddCourierLane(publisherBuilder.Configuration.GetSection("Rabbit"));
+        publisherBuilder.Services.AddCourierLaneContracts(contracts => contracts.Register<RecoveryEvent>("test.recovery.v1"));
         var publisherHost = publisherBuilder.Build();
         await using var ownedPublisher = (IAsyncDisposable)publisherHost;
 
-        var brokerHost = publisherBuilder.Configuration["Rabbit:Host"]!;
-        var brokerPort = int.Parse(publisherBuilder.Configuration["Rabbit:Port"]!);
-        await using var proxy = new TcpProxy(brokerHost, brokerPort);
+        await using var proxy = new TcpProxy(this.fixture.RabbitMqHost, this.fixture.RabbitMqPort);
         var listenerBuilder = Host.CreateApplicationBuilder();
-        listenerBuilder.Configuration.AddRabbitSettings("Rabbit");
+        listenerBuilder.Configuration.AddRabbitSettings("Rabbit", this.fixture);
         listenerBuilder.Configuration["Rabbit:Host"] = "127.0.0.1";
         listenerBuilder.Configuration["Rabbit:Port"] = proxy.Port.ToString();
         listenerBuilder.Configuration["Rabbit:Consumer:DeadLetter:Enabled"] = "false";
-        listenerBuilder.Services.AddRabbitMessaging(listenerBuilder.Configuration.GetSection("Rabbit"));
-        listenerBuilder.Services.AddRabbitEventListener(events =>
+        listenerBuilder.Services.AddCourierLane(listenerBuilder.Configuration.GetSection("Rabbit"));
+        listenerBuilder.Services.AddCourierLaneEventListener(events =>
             events.Subscribe(exchange, "recovery").Handle<RecoveryEvent, RecoveryHandler>("test.recovery.v1"));
         var deliveries = new DeliverySignals();
         listenerBuilder.Services.AddSingleton(deliveries);
@@ -168,17 +176,6 @@ public class RabbitRecoveryTests
             await this.traffic;
             this.listener.Stop();
             this.stopping.Dispose();
-        }
-    }
-
-    private class RecoveryFactAttribute : FactAttribute
-    {
-        public RecoveryFactAttribute()
-        {
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(RabbitIntegrationSettings.HostVariable)))
-            {
-                this.Skip = "Set MESSAGING_TEST_RABBITMQ to a local RabbitMQ host.";
-            }
         }
     }
 }

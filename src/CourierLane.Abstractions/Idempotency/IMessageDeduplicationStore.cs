@@ -1,4 +1,4 @@
-namespace Messaging.Abstractions.Idempotency;
+namespace CourierLane.Abstractions.Idempotency;
 
 public interface IMessageDeduplicationStore
 {

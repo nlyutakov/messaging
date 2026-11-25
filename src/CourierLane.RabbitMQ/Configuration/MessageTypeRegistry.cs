@@ -1,4 +1,4 @@
-namespace Messaging.RabbitMQ.Configuration;
+namespace CourierLane.RabbitMQ.Configuration;
 
 public class MessageTypeRegistry
 {

@@ -1,5 +1,5 @@
-using Messaging.Abstractions.Idempotency;
-using Messaging.RabbitMQ.Configuration;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.RabbitMQ.Configuration;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-namespace Messaging.Idempotency.Sqlite;
+namespace CourierLane.Idempotency.Sqlite;
 
 public static class SqliteIdempotencyExtensions
 {
@@ -24,7 +24,7 @@ public static class SqliteIdempotencyExtensions
         services.TryAddKeyedSingleton<IMessageDeduplicationStore>(ProviderName, (provider, _) =>
         {
             var options = provider.GetRequiredService<IOptions<SqliteOptions>>().Value;
-            var rabbit = provider.GetRequiredService<IOptions<RabbitMessagingOptions>>().Value;
+            var rabbit = provider.GetRequiredService<IOptions<CourierLaneOptions>>().Value;
             return new SqliteMessageStore(options.DatabasePath, options.KeyPrefix, rabbit);
         });
         services.AddHostedService<SqliteMigration>();
@@ -35,10 +35,10 @@ public static class SqliteIdempotencyExtensions
 internal class SqliteOptions
 {
     public string DatabasePath { get; set; } = "";
-    public string KeyPrefix { get; set; } = "messaging:idempotency:";
+    public string KeyPrefix { get; set; } = "courierlane:idempotency:";
 }
 
-internal class SqliteMigration(IOptions<SqliteOptions> sqlite, IOptions<RabbitMessagingOptions> rabbit) : IHostedLifecycleService
+internal class SqliteMigration(IOptions<SqliteOptions> sqlite, IOptions<CourierLaneOptions> rabbit) : IHostedLifecycleService
 {
     public async Task StartingAsync(CancellationToken cancellationToken)
     {
@@ -52,7 +52,7 @@ internal class SqliteMigration(IOptions<SqliteOptions> sqlite, IOptions<RabbitMe
         await using var command = connection.CreateCommand();
         command.CommandText = """
             PRAGMA journal_mode = WAL;
-            CREATE TABLE IF NOT EXISTS messaging_idempotency_v1 (
+            CREATE TABLE IF NOT EXISTS courierlane_idempotency_v1 (
                 scope TEXT NOT NULL,
                 message_key TEXT NOT NULL,
                 token TEXT NOT NULL,
@@ -60,7 +60,7 @@ internal class SqliteMigration(IOptions<SqliteOptions> sqlite, IOptions<RabbitMe
                 expires REAL NOT NULL,
                 PRIMARY KEY (scope, message_key)
             );
-            CREATE INDEX IF NOT EXISTS messaging_idempotency_v1_expiry ON messaging_idempotency_v1(scope, expires);
+            CREATE INDEX IF NOT EXISTS courierlane_idempotency_v1_expiry ON courierlane_idempotency_v1(scope, expires);
             """;
         await command.ExecuteNonQueryAsync(cancellationToken);
     }

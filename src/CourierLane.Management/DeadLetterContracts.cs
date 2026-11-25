@@ -1,4 +1,4 @@
-namespace Messaging.Management;
+namespace CourierLane.Management;
 
 public enum DeadLetterStatus
 {

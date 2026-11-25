@@ -1,15 +1,15 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
-using Messaging.Abstractions.Exceptions;
-using Messaging.Abstractions.Producers;
-using Messaging.Abstractions.Rpc;
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.Diagnostics;
-using Messaging.RabbitMQ.Producers;
+using CourierLane.Abstractions.Exceptions;
+using CourierLane.Abstractions.Producers;
+using CourierLane.Abstractions.Rpc;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Diagnostics;
+using CourierLane.RabbitMQ.Producers;
 using RabbitMQ.AMQP.Client;
-namespace Messaging.RabbitMQ.Rpc;
+namespace CourierLane.RabbitMQ.Rpc;
 
 public class RabbitRpcClient : IAsyncDisposable
 {
@@ -41,10 +41,10 @@ public class RabbitRpcClient : IAsyncDisposable
         var payload = JsonSerializer.SerializeToUtf8Bytes(request, this.jsonOptions);
 
         var message = RabbitMessageMetadata.Create(payload, messageTypeId, options?.Metadata, useNativeCorrelation: false);
-        using var activity = MessagingDiagnostics.Activities.StartActivity("request", ActivityKind.Client);
+        using var activity = CourierLaneDiagnostics.Activities.StartActivity("request", ActivityKind.Client);
         activity?.SetTag("messaging.system", "rabbitmq");
         activity?.SetTag("messaging.destination.name", destination);
-        MessagingDiagnostics.InjectTrace(message);
+        CourierLaneDiagnostics.InjectTrace(message);
 
         var requester = await this.GetRequesterAsync(destination, cancellationToken);
 

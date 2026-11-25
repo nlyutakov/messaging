@@ -1,3 +1,3 @@
-namespace Messaging.Abstractions.Idempotency;
+namespace CourierLane.Abstractions.Idempotency;
 
 public record MessageAcquireResponse(MessageAcquireResult Result, MessageLease? Lease = null);

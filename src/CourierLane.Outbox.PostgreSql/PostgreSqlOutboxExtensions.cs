@@ -4,11 +4,11 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
-namespace Messaging.Outbox.PostgreSql;
+namespace CourierLane.Outbox.PostgreSql;
 
 public static class PostgreSqlOutboxExtensions
 {
-    internal const string ConnectionKey = "Messaging.Outbox.PostgreSql";
+    internal const string ConnectionKey = "CourierLane.Outbox.PostgreSql";
 
     public static IServiceCollection AddPostgreSqlOutbox(this IServiceCollection services, IConfiguration configuration)
     {

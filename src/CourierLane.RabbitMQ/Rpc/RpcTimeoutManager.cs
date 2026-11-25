@@ -1,12 +1,12 @@
-using Messaging.Abstractions.Producers;
-using Messaging.RabbitMQ.Configuration;
+using CourierLane.Abstractions.Producers;
+using CourierLane.RabbitMQ.Configuration;
 using Microsoft.Extensions.Options;
-namespace Messaging.RabbitMQ.Rpc;
+namespace CourierLane.RabbitMQ.Rpc;
 
 public class RpcTimeoutManager
 {
     private readonly RpcOptions options;
-    public RpcTimeoutManager(IOptions<RabbitMessagingOptions> options)
+    public RpcTimeoutManager(IOptions<CourierLaneOptions> options)
     {
         this.options = options.Value.Rpc;
     }

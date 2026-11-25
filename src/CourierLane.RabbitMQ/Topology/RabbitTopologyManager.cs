@@ -1,9 +1,9 @@
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Connections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.AMQP.Client;
-namespace Messaging.RabbitMQ.Topology;
+namespace CourierLane.RabbitMQ.Topology;
 
 public class RabbitTopologyManager
 {
@@ -11,10 +11,10 @@ public class RabbitTopologyManager
 
     private readonly ListenerRegistration registration;
 
-    private readonly RabbitMessagingOptions options;
+    private readonly CourierLaneOptions options;
 
     private readonly ILogger<RabbitTopologyManager> logger;
-    public RabbitTopologyManager(RabbitConnectionManager connections, ListenerRegistration registration, IOptions<RabbitMessagingOptions> options, ILogger<RabbitTopologyManager> logger)
+    public RabbitTopologyManager(RabbitConnectionManager connections, ListenerRegistration registration, IOptions<CourierLaneOptions> options, ILogger<RabbitTopologyManager> logger)
     {
         this.connections = connections;
         this.registration = registration;

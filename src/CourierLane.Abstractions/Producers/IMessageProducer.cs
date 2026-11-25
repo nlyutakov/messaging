@@ -1,4 +1,4 @@
-namespace Messaging.Abstractions.Producers;
+namespace CourierLane.Abstractions.Producers;
 
 public interface IMessageProducer
 {

@@ -5,9 +5,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="Messaging.RabbitMQ.Tests" />
+    <InternalsVisibleTo Include="CourierLane.RabbitMQ.Tests" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="../Messaging.RabbitMQ/Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="../CourierLane.RabbitMQ/CourierLane.RabbitMQ.csproj" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
   </ItemGroup>
 </Project>

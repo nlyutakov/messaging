@@ -1,14 +1,14 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
-using Messaging.Abstractions.Producers;
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Connections;
-using Messaging.RabbitMQ.Diagnostics;
-using Messaging.RabbitMQ.Rpc;
+using CourierLane.Abstractions.Producers;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Connections;
+using CourierLane.RabbitMQ.Diagnostics;
+using CourierLane.RabbitMQ.Rpc;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.AMQP.Client;
-namespace Messaging.RabbitMQ.Producers;
+namespace CourierLane.RabbitMQ.Producers;
 
 public class RabbitMessageProducer : IMessageProducer, IEventPublisher, IAsyncDisposable
 {
@@ -74,10 +74,10 @@ public class RabbitMessageProducer : IMessageProducer, IEventPublisher, IAsyncDi
         ObjectDisposedException.ThrowIf(this.disposed, this);
         cancellationToken.ThrowIfCancellationRequested();
         var message = RabbitMessageMetadata.Create(payload, typeId, options).Durable(true);
-        using var activity = MessagingDiagnostics.Activities.StartActivity("publish", ActivityKind.Producer);
+        using var activity = CourierLaneDiagnostics.Activities.StartActivity("publish", ActivityKind.Producer);
         activity?.SetTag("messaging.system", "rabbitmq");
         activity?.SetTag("messaging.destination.name", destination);
-        MessagingDiagnostics.InjectTrace(message);
+        CourierLaneDiagnostics.InjectTrace(message);
         var started = Stopwatch.GetTimestamp();
         var outcome = "failed";
         try
@@ -100,8 +100,8 @@ public class RabbitMessageProducer : IMessageProducer, IEventPublisher, IAsyncDi
         finally
         {
             var tag = new KeyValuePair<string, object?>("outcome", outcome);
-            MessagingDiagnostics.Published.Add(1, tag);
-            MessagingDiagnostics.PublishDuration.Record(Stopwatch.GetElapsedTime(started).TotalMilliseconds, tag);
+            CourierLaneDiagnostics.Published.Add(1, tag);
+            CourierLaneDiagnostics.PublishDuration.Record(Stopwatch.GetElapsedTime(started).TotalMilliseconds, tag);
             if (outcome == "failed")
             {
                 activity?.SetStatus(ActivityStatusCode.Error);

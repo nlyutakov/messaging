@@ -1,4 +1,4 @@
-namespace Messaging.Abstractions.Handlers;
+namespace CourierLane.Abstractions.Handlers;
 
 public interface IEventHandler<TEvent> : ICommandHandler<TEvent>
 {

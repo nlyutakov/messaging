@@ -1,7 +1,7 @@
-using Messaging.Abstractions.Idempotency;
+using CourierLane.Abstractions.Idempotency;
 using StackExchange.Redis;
 
-namespace Messaging.Idempotency.Redis;
+namespace CourierLane.Idempotency.Redis;
 
 internal class RedisMessageDeduplicationStore(IDatabase database, string keyPrefix, string virtualHost, TimeSpan processingTimeout, TimeSpan retentionPeriod) : IMessageDeduplicationStore
 {

@@ -1,10 +1,10 @@
-using Messaging.RabbitMQ.Options;
+using CourierLane.RabbitMQ.Options;
 
-namespace Messaging.RabbitMQ.Configuration;
+namespace CourierLane.RabbitMQ.Configuration;
 
-public class RabbitMessagingOptions
+public class CourierLaneOptions
 {
-    public const string SectionName = "RabbitMessaging";
+    public const string SectionName = "CourierLane";
 
     public string Host { get; set; } = "localhost";
 

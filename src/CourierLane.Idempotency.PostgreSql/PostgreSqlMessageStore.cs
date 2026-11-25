@@ -1,10 +1,10 @@
-using Messaging.Abstractions.Idempotency;
-using Messaging.RabbitMQ.Configuration;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.RabbitMQ.Configuration;
 using Npgsql;
 
-namespace Messaging.Idempotency.PostgreSql;
+namespace CourierLane.Idempotency.PostgreSql;
 
-internal class PostgreSqlMessageStore(NpgsqlDataSource source, RabbitMessagingOptions options, string prefix) : IMessageDeduplicationStore
+internal class PostgreSqlMessageStore(NpgsqlDataSource source, CourierLaneOptions options, string prefix) : IMessageDeduplicationStore
 {
     private readonly string scope = $"{prefix.Length}:{prefix}{options.VirtualHost}";
     private readonly TimeSpan processing = options.Idempotency.ProcessingTimeout;
@@ -20,7 +20,7 @@ internal class PostgreSqlMessageStore(NpgsqlDataSource source, RabbitMessagingOp
 
         var token = Guid.NewGuid().ToString("N");
         await using var command = this.CreateCommand("""
-            INSERT INTO messaging_idempotency_v1 AS entries (scope, message_key, token, completed, expires)
+            INSERT INTO courierlane_idempotency_v1 AS entries (scope, message_key, token, completed, expires)
             VALUES (@scope, @key, @token, false, clock_timestamp() + @ttl)
             ON CONFLICT (scope, message_key) DO UPDATE SET (token, completed, expires) = (
                 SELECT CASE WHEN entries.expires <= observed.now THEN excluded.token ELSE entries.token END,
@@ -54,7 +54,7 @@ internal class PostgreSqlMessageStore(NpgsqlDataSource source, RabbitMessagingOp
     public async Task ReleaseAsync(MessageLease lease, CancellationToken cancellationToken = default)
     {
         await using var command = this.CreateCommand("""
-            DELETE FROM messaging_idempotency_v1 WHERE scope = @scope AND message_key = @key AND token = @token AND NOT completed;
+            DELETE FROM courierlane_idempotency_v1 WHERE scope = @scope AND message_key = @key AND token = @token AND NOT completed;
             """, lease);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -62,7 +62,7 @@ internal class PostgreSqlMessageStore(NpgsqlDataSource source, RabbitMessagingOp
     private async Task<bool> UpdateAsync(MessageLease lease, TimeSpan ttl, bool completed, CancellationToken cancellationToken)
     {
         await using var command = this.CreateCommand("""
-            UPDATE messaging_idempotency_v1 SET completed = @completed, expires = clock_timestamp() + @ttl
+            UPDATE courierlane_idempotency_v1 SET completed = @completed, expires = clock_timestamp() + @ttl
             WHERE scope = @scope AND message_key = @key AND token = @token AND NOT completed AND expires > clock_timestamp();
             """, lease);
         command.Parameters.AddWithValue("completed", completed);
@@ -74,10 +74,10 @@ internal class PostgreSqlMessageStore(NpgsqlDataSource source, RabbitMessagingOp
     {
         await using var command = source.CreateCommand("""
             WITH expired AS (
-                SELECT message_key FROM messaging_idempotency_v1 WHERE scope = @scope AND expires <= statement_timestamp()
+                SELECT message_key FROM courierlane_idempotency_v1 WHERE scope = @scope AND expires <= statement_timestamp()
                 ORDER BY expires LIMIT 64 FOR UPDATE SKIP LOCKED
             )
-            DELETE FROM messaging_idempotency_v1 AS entries USING expired
+            DELETE FROM courierlane_idempotency_v1 AS entries USING expired
             WHERE entries.scope = @scope AND entries.message_key = expired.message_key;
             """);
         command.Parameters.AddWithValue("scope", this.scope);

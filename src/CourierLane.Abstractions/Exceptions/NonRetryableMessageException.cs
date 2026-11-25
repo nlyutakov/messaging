@@ -1,4 +1,4 @@
-namespace Messaging.Abstractions.Exceptions;
+namespace CourierLane.Abstractions.Exceptions;
 
 public class NonRetryableMessageException : Exception
 {

@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
-using Messaging.Abstractions.Idempotency;
-using Messaging.RabbitMQ.Configuration;
-using Messaging.RabbitMQ.Options;
+using CourierLane.Abstractions.Idempotency;
+using CourierLane.RabbitMQ.Configuration;
+using CourierLane.RabbitMQ.Options;
 using Microsoft.Extensions.Options;
 
-namespace Messaging.RabbitMQ.Idempotency;
+namespace CourierLane.RabbitMQ.Idempotency;
 
 public class InMemoryMessageDeduplicationStore : IMessageDeduplicationStore
 {
@@ -14,7 +14,7 @@ public class InMemoryMessageDeduplicationStore : IMessageDeduplicationStore
     private IEnumerator<KeyValuePair<string, MessageEntry>>? cleanupCursor;
     private int acquisitions;
 
-    public InMemoryMessageDeduplicationStore(IOptions<RabbitMessagingOptions> options)
+    public InMemoryMessageDeduplicationStore(IOptions<CourierLaneOptions> options)
 {
     this.options = options.Value.Idempotency;
 }

@@ -6,12 +6,15 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Messaging.RabbitMQ/Messaging.RabbitMQ.csproj" />
-    <ProjectReference Include="../../src/Messaging.Idempotency.Redis/Messaging.Idempotency.Redis.csproj" />
-    <ProjectReference Include="../../src/Messaging.Management/Messaging.Management.csproj" />
-    <ProjectReference Include="../../src/Messaging.Idempotency.PostgreSql/Messaging.Idempotency.PostgreSql.csproj" />
-    <ProjectReference Include="../../src/Messaging.Idempotency.Sqlite/Messaging.Idempotency.Sqlite.csproj" />
-    <ProjectReference Include="../../src/Messaging.Outbox.PostgreSql/Messaging.Outbox.PostgreSql.csproj" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.17.0" />
+    <PackageReference Include="Testcontainers.RabbitMq" Version="4.17.0" />
+    <PackageReference Include="Testcontainers.Redis" Version="4.17.0" />
+    <ProjectReference Include="../../src/CourierLane.RabbitMQ/CourierLane.RabbitMQ.csproj" />
+    <ProjectReference Include="../../src/CourierLane.Idempotency.Redis/CourierLane.Idempotency.Redis.csproj" />
+    <ProjectReference Include="../../src/CourierLane.Management/CourierLane.Management.csproj" />
+    <ProjectReference Include="../../src/CourierLane.Idempotency.PostgreSql/CourierLane.Idempotency.PostgreSql.csproj" />
+    <ProjectReference Include="../../src/CourierLane.Idempotency.Sqlite/CourierLane.Idempotency.Sqlite.csproj" />
+    <ProjectReference Include="../../src/CourierLane.Outbox.PostgreSql/CourierLane.Outbox.PostgreSql.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" PrivateAssets="all" />

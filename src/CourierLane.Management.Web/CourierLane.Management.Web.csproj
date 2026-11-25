@@ -6,7 +6,7 @@
     <WarnOnPackingNonPackableProject>false</WarnOnPackingNonPackableProject>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Messaging.Management/Messaging.Management.csproj" />
+    <ProjectReference Include="../CourierLane.Management/CourierLane.Management.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
   </ItemGroup>
 </Project>
