@@ -2,6 +2,7 @@ using System.Text.Json;
 using Messaging.Abstractions.Rpc;
 using Messaging.RabbitMQ.Connections;
 using Messaging.RabbitMQ.Dispatching;
+using Messaging.RabbitMQ.Diagnostics;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.AMQP.Client;
 namespace Messaging.RabbitMQ.Rpc;
@@ -29,6 +30,7 @@ public class RabbitRpcResponder
             .RequestQueue(queueName)
             .Handler(async (context, message) =>
             {
+                using var activity = MessagingDiagnostics.StartProcessing(message, "respond", queueName);
                 RpcResponseEnvelope envelope;
 
                 try

@@ -1,17 +1,22 @@
 using Messaging.RabbitMQ.Configuration;
+using Messaging.RabbitMQ.Diagnostics;
 using Microsoft.Extensions.Logging;
+
 namespace Messaging.RabbitMQ.Retry;
 
 public class RetryExecutor
 {
     private readonly RetryOptions options;
-
+    private readonly IRetryExceptionClassifier classifier;
     private readonly ILogger<RetryExecutor> logger;
-    public RetryExecutor(RetryOptions options, ILogger<RetryExecutor> logger)
+
+    public RetryExecutor(RetryOptions options, IRetryExceptionClassifier classifier, ILogger<RetryExecutor> logger)
     {
         this.options = options;
+        this.classifier = classifier;
         this.logger = logger;
     }
+
     public async Task ExecuteAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
@@ -28,7 +33,6 @@ public class RetryExecutor
             try
             {
                 await operation(cancellationToken);
-
                 return;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -37,27 +41,34 @@ public class RetryExecutor
             }
             catch (Exception ex)
             {
-                if (attempt == this.options.MaxAttempts)
+                if (!this.classifier.ShouldRetry(ex))
                 {
-                    this.logger.LogError(ex, "Message processing failed after {Attempts} attempts", attempt);
-
+                    this.logger.LogWarning(ex, "Non-retryable message processing error on attempt {Attempt}", attempt);
                     throw;
                 }
 
-                var delay = CalculateDelay(attempt);
+                if (attempt == this.options.MaxAttempts)
+                {
+                    this.logger.LogError(ex, "Message processing failed after {Attempts} attempts", attempt);
+                    throw;
+                }
 
-                this.logger.LogWarning(ex, "Message processing failed on attempt {Attempt}/{MaxAttempts}; retrying in {Delay}", attempt, this.options.MaxAttempts, delay);
+                var delay = this.CalculateDelay(attempt);
+                MessagingDiagnostics.Retries.Add(1);
+
+                this.logger.LogWarning(ex, "Message processing failed on attempt {Attempt}/{MaxAttempts}; retrying in {Delay}",
+                    attempt, this.options.MaxAttempts, delay);
 
                 await Task.Delay(delay, cancellationToken);
             }
         }
     }
+
     private TimeSpan CalculateDelay(int failedAttempt)
     {
         var multiplier = Math.Pow(this.options.BackoffMultiplier, failedAttempt - 1);
+        var milliseconds = Math.Min(this.options.InitialDelay.TotalMilliseconds * multiplier, this.options.MaxDelay.TotalMilliseconds);
 
-        var ms = Math.Min(this.options.InitialDelay.TotalMilliseconds * multiplier, this.options.MaxDelay.TotalMilliseconds);
-
-        return TimeSpan.FromMilliseconds(ms);
+        return TimeSpan.FromMilliseconds(milliseconds);
     }
 }

@@ -1,12 +1,14 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.Json;
 using Messaging.Abstractions.Exceptions;
 using Messaging.Abstractions.Producers;
 using Messaging.Abstractions.Rpc;
 using Messaging.RabbitMQ.Configuration;
 using Messaging.RabbitMQ.Connections;
+using Messaging.RabbitMQ.Diagnostics;
+using Messaging.RabbitMQ.Producers;
 using RabbitMQ.AMQP.Client;
-using RabbitMQ.AMQP.Client.Impl;
 namespace Messaging.RabbitMQ.Rpc;
 
 public class RabbitRpcClient : IAsyncDisposable
@@ -36,14 +38,15 @@ public class RabbitRpcClient : IAsyncDisposable
 
         var messageTypeId = this.messageTypes.GetMessageTypeId<TRequest>();
 
-        var requester = await GetRequesterAsync(destination, cancellationToken);
-
         var payload = JsonSerializer.SerializeToUtf8Bytes(request, this.jsonOptions);
 
-        var message = new AmqpMessage(payload)
-            .Property("message-type", messageTypeId)
-            .ContentType("application/json")
-            .MessageId(Guid.NewGuid().ToString("N"));
+        var message = RabbitMessageMetadata.Create(payload, messageTypeId, options?.Metadata, useNativeCorrelation: false);
+        using var activity = MessagingDiagnostics.Activities.StartActivity("request", ActivityKind.Client);
+        activity?.SetTag("messaging.system", "rabbitmq");
+        activity?.SetTag("messaging.destination.name", destination);
+        MessagingDiagnostics.InjectTrace(message);
+
+        var requester = await this.GetRequesterAsync(destination, cancellationToken);
 
         var reply = await RpcTimeoutExecutor.ExecuteAsync(ct => requester.PublishAsync(message, ct), destination, messageTypeId, timeout, cancellationToken);
 

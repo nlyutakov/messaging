@@ -18,6 +18,8 @@ public class RabbitConnectionManager : IAsyncDisposable
     private IConnection? connection;
 
     private bool disposed;
+
+    public bool IsConnected => Volatile.Read(ref this.connection)?.State == State.Open;
     public RabbitConnectionManager(IOptions<RabbitMessagingOptions> options, ILogger<RabbitConnectionManager> logger)
     {
         this.options = options.Value;
@@ -33,17 +35,24 @@ public class RabbitConnectionManager : IAsyncDisposable
 
             if (this.connection is not null)
             {
-                return connection;
+                return this.connection;
             }
 
             if (this.environment is null)
             {
-                var settings = ConnectionSettingsBuilder.Create()
+                var builder = ConnectionSettingsBuilder.Create();
+                if (this.options.UseTls)
+                {
+                    builder.Uri(new UriBuilder("amqps", this.options.Host, this.options.Port).Uri);
+                }
+
+                var settings = builder
                     .Host(this.options.Host)
                     .Port(this.options.Port)
                     .User(this.options.Username)
                     .Password(this.options.Password)
                     .VirtualHost(this.options.VirtualHost)
+                    .RecoveryConfiguration(new RecoveryConfiguration().Activated(true).Topology(this.options.Consumer.AutoDeclare))
                     .Build();
 
                 this.environment = AmqpEnvironment.Create(settings);
@@ -51,7 +60,7 @@ public class RabbitConnectionManager : IAsyncDisposable
 
             this.connection = await this.environment.CreateConnectionAsync(cancellationToken);
 
-            return connection;
+            return this.connection;
         }
         finally
         {

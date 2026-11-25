@@ -7,11 +7,11 @@ namespace Messaging.RabbitMQ.Dispatching;
 
 public class MessageDispatcher : IMessageDispatcher
 {
-    private delegate Task<object?> HandlerInvoker(IServiceProvider services, object message, CancellationToken cancellationToken);
+    private delegate Task<object?> HandlerInvoker(IServiceProvider services, Type handlerType, object message, CancellationToken cancellationToken);
 
     private readonly IServiceScopeFactory scopeFactory;
 
-    private readonly Dictionary<(string Queue, string MessageTypeId), (Type MessageType, HandlerInvoker Invoke)> handlers = new();
+    private readonly Dictionary<(string Queue, string MessageTypeId), (HandlerRegistration Registration, HandlerInvoker Invoke)> handlers = new();
 
     private readonly JsonSerializerOptions jsonOptions = new(JsonSerializerDefaults.Web);
     public MessageDispatcher(IServiceScopeFactory scopeFactory, ListenerRegistration registration)
@@ -22,7 +22,7 @@ public class MessageDispatcher : IMessageDispatcher
         {
             foreach (var handler in queue.Handlers)
             {
-                if (!this.handlers.TryAdd((queue.Name, handler.MessageTypeId), (handler.MessageType, CreateInvoker(handler))))
+                if (!this.handlers.TryAdd((queue.Name, handler.MessageTypeId), (handler, CreateInvoker(handler))))
                 {
                     throw new InvalidOperationException($"Duplicate handler {queue.Name}/{handler.MessageTypeId}");
                 }
@@ -33,14 +33,14 @@ public class MessageDispatcher : IMessageDispatcher
     {
         if (!this.handlers.TryGetValue((queueName, messageTypeId), out var registration))
         {
-            throw new InvalidOperationException($"No handler registered for '{messageTypeId}' on queue '{queueName}'.");
+            throw new UnknownMessageTypeException(queueName, messageTypeId);
         }
 
-        var message = JsonSerializer.Deserialize(payload.Span, registration.MessageType, this.jsonOptions) ?? throw new JsonException($"Message '{messageTypeId}' deserialized to null.");
+        var message = JsonSerializer.Deserialize(payload.Span, registration.Registration.MessageType, this.jsonOptions) ?? throw new JsonException($"Message '{messageTypeId}' deserialized to null.");
 
         await using var scope = this.scopeFactory.CreateAsyncScope();
 
-        return await registration.Invoke(scope.ServiceProvider, message, cancellationToken);
+        return await registration.Invoke(scope.ServiceProvider, registration.Registration.HandlerType, message, cancellationToken);
     }
     private static HandlerInvoker CreateInvoker(HandlerRegistration registration)
     {
@@ -55,16 +55,16 @@ public class MessageDispatcher : IMessageDispatcher
         return method.MakeGenericMethod(args)
             .CreateDelegate<HandlerInvoker>();
     }
-    private static async Task<object?> InvokeCommandAsync<TCommand>(IServiceProvider services, object message, CancellationToken ct)
+    private static async Task<object?> InvokeCommandAsync<TCommand>(IServiceProvider services, Type handlerType, object message, CancellationToken ct)
     {
-        await services.GetRequiredService<ICommandHandler<TCommand>>()
-            .HandleAsync((TCommand)message, ct);
+        var handler = (ICommandHandler<TCommand>?)services.GetService(handlerType) ?? services.GetRequiredService<ICommandHandler<TCommand>>();
+        await handler.HandleAsync((TCommand)message, ct);
 
         return null;
     }
-    private static async Task<object?> InvokeRequestAsync<TRequest, TResponse>(IServiceProvider services, object message, CancellationToken ct)
+    private static async Task<object?> InvokeRequestAsync<TRequest, TResponse>(IServiceProvider services, Type handlerType, object message, CancellationToken ct)
     {
-        return await services.GetRequiredService<IRequestHandler<TRequest, TResponse>>()
-            .HandleAsync((TRequest)message, ct);
+        var handler = (IRequestHandler<TRequest, TResponse>?)services.GetService(handlerType) ?? services.GetRequiredService<IRequestHandler<TRequest, TResponse>>();
+        return await handler.HandleAsync((TRequest)message, ct);
     }
 }

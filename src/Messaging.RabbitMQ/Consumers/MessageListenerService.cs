@@ -21,6 +21,10 @@ public class MessageListenerService : BackgroundService
     private readonly List<IConsumer> consumers = [];
 
     private readonly List<IResponder> responders = [];
+    private int ready;
+    private volatile IConsumer[] activeConsumers = [];
+
+    public bool IsReady => Volatile.Read(ref this.ready) == 1 && this.activeConsumers.All(consumer => consumer.State == State.Open);
     public MessageListenerService(RabbitTopologyManager topology, RabbitQueueConsumer queueConsumer, RabbitRpcResponder rpcResponder, ListenerRegistration registration, ILogger<MessageListenerService> logger)
     {
         this.topology = topology;
@@ -59,6 +63,8 @@ public class MessageListenerService : BackgroundService
             }
 
             this.logger.LogInformation("Rabbit listener started: {Consumers} consumers, {Responders} responders", this.consumers.Count, this.responders.Count);
+            this.activeConsumers = this.consumers.ToArray();
+            Volatile.Write(ref this.ready, 1);
 
             await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
         }
@@ -67,6 +73,8 @@ public class MessageListenerService : BackgroundService
         }
         finally
         {
+            Volatile.Write(ref this.ready, 0);
+            this.activeConsumers = [];
             foreach (var responder in this.responders)
             {
                 try

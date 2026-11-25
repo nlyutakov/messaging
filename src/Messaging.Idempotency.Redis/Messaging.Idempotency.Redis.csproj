@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Messaging.RabbitMQ/Messaging.RabbitMQ.csproj" />
+    <PackageReference Include="StackExchange.Redis" Version="2.13.23" />
+  </ItemGroup>
+</Project>

@@ -1,3 +1,5 @@
+using Messaging.RabbitMQ.Options;
+
 namespace Messaging.RabbitMQ.Configuration;
 
 public class RabbitMessagingOptions
@@ -14,9 +16,13 @@ public class RabbitMessagingOptions
 
     public string VirtualHost { get; set; } = "/";
 
+    public bool UseTls { get; set; }
+
     public RpcOptions Rpc { get; set; } = new();
 
     public ConsumerOptions Consumer { get; set; } = new();
+
+    public IdempotencyOptions Idempotency { get; set; } = new();
 }
 
 public class RpcOptions
@@ -43,6 +49,8 @@ public class ConsumerOptions
     public RetryOptions Retry { get; set; } = new();
 
     public DeadLetterOptions DeadLetter { get; set; } = new();
+
+    public bool EnableIdempotency { get; set; } = false;
 }
 
 public class RetryOptions

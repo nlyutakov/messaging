@@ -9,6 +9,8 @@ public class QueueRegistration
     public QueueOptions Options { get; }
 
     public List<HandlerRegistration> Handlers { get; } = [];
+
+    internal EventQueueBinding? EventBinding { get; init; }
     public QueueRegistration(string name, QueueOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -82,6 +84,16 @@ public class RabbitListenerBuilder
     {
         foreach (var q in this.registration.Queues)
         {
+            if (q.Options.Credit is <= 0 || q.Options.MaxConcurrency is <= 0)
+            {
+                throw new InvalidOperationException($"Consumer limits for queue '{q.Name}' must be positive.");
+            }
+
+            if (q.Options.QueueType is { } queueType && !Enum.IsDefined(queueType))
+            {
+                throw new InvalidOperationException($"Invalid queue type for queue '{q.Name}'.");
+            }
+
             if (q.Handlers.Count == 0)
             {
                 throw new InvalidOperationException($"Queue '{q.Name}' has no handlers.");

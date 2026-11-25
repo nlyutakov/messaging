@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dead-letter queues · CourierLane</title>
+    <link rel="stylesheet" href="/style.css">
+    <script type="module" src="/app.js"></script>
+</head>
+<body>
+    <header class="topbar">
+        <div class="shell"><strong>CourierLane</strong><span class="section">Operations</span></div>
+    </header>
+    <main class="shell">
+        <h1>Dead-letter messages</h1>
+        <form id="connect" class="panel connect">
+            <label>Bearer token <input id="token" type="password" required autocomplete="off" spellcheck="false"></label>
+            <button class="primary" type="submit">Connect</button>
+            <button id="disconnect" type="button" hidden>Disconnect</button>
+        </form>
+        <p id="notice" role="status" aria-live="polite"></p>
+        <div id="dashboard" hidden>
+            <ul id="counts" class="counts" aria-label="Records by status"></ul>
+            <div class="panel">
+                <div class="toolbar">
+                    <label>Status
+                        <select id="filter">
+                            <option value="">All statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Replaying">Replay in progress or outcome unknown</option>
+                            <option value="Replayed">Replayed</option>
+                            <option value="Archived">Archived</option>
+                            <option value="Discarded">Discarded</option>
+                        </select>
+                    </label>
+                    <button id="refresh" type="button">Refresh</button>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr><th>Received</th><th>Type</th><th>Original queue</th><th>Reason</th><th>Status</th><th>Record</th></tr></thead>
+                        <tbody id="rows"></tbody>
+                    </table>
+                </div>
+                <p id="empty" hidden>No messages match the selected status.</p>
+                <nav class="toolbar pagination" aria-label="Pages">
+                    <button id="previous" type="button">Previous</button>
+                    <button id="next" type="button">Next</button>
+                </nav>
+            </div>
+        </div>
+    </main>
+    <dialog id="details">
+        <div class="dialog-heading"><h2 id="detail-title">Message</h2><button id="close" type="button">Close</button></div>
+        <dl id="metadata"></dl>
+        <pre id="payload" aria-label="Payload" hidden></pre>
+        <p id="detail-notice" role="status"></p>
+        <div class="actions">
+            <button data-action="replay" type="button">Replay</button>
+            <button data-action="archive" type="button">Archive</button>
+            <button data-action="discard" class="danger" type="button">Discard payload</button>
+        </div>
+    </dialog>
+    <dialog id="confirm">
+        <form method="dialog">
+            <h2>Confirm action</h2>
+            <p id="confirm-text"></p>
+            <div class="actions">
+                <button value="cancel" autofocus>Cancel</button>
+                <button value="apply" class="primary">Confirm</button>
+            </div>
+        </form>
+    </dialog>
+</body>
+</html>

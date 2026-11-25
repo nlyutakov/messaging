@@ -1,0 +1,35 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: messaging_test
+      RABBITMQ_DEFAULT_PASS: ${MESSAGING_TEST_RABBITMQ_PASSWORD:?Set a temporary RabbitMQ test password}
+    ports:
+      - "127.0.0.1:15673:5672"
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 2s
+      timeout: 10s
+      retries: 20
+  redis:
+    image: redis:8.8.0
+    ports:
+      - "127.0.0.1:16379:6379"
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: messaging_test
+      POSTGRES_DB: messaging_test
+      POSTGRES_PASSWORD: ${MESSAGING_TEST_POSTGRES_PASSWORD:?Set a temporary PostgreSQL test password}
+    ports:
+      - "127.0.0.1:15432:5432"
+    healthcheck:
+      test: [CMD, pg_isready, -h, "127.0.0.1", -U, messaging_test]
+      interval: 2s
+      timeout: 5s
+      retries: 10

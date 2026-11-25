@@ -25,6 +25,11 @@ public class RabbitTopologyManager
     {
         if (!this.options.Consumer.AutoDeclare)
         {
+            if (this.registration.Queues.Any(queue => queue.EventBinding?.Broadcast == true))
+            {
+                throw new InvalidOperationException("Broadcast subscriptions require automatic queue declaration.");
+            }
+
             this.logger.LogInformation("Automatic queue declaration disabled");
 
             return;
@@ -38,7 +43,9 @@ public class RabbitTopologyManager
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var queueType = queue.Options.QueueType ?? this.options.Consumer.QueueType;
+            var eventBinding = queue.EventBinding;
+            var broadcast = eventBinding?.Broadcast == true;
+            var queueType = broadcast ? RabbitQueueType.Classic : queue.Options.QueueType ?? this.options.Consumer.QueueType;
 
             var amqpQueueType = queueType switch
             {
@@ -49,23 +56,24 @@ public class RabbitTopologyManager
 
             var queueSpec = management.Queue(queue.Name)
                 .Type(amqpQueueType)
-                .Exclusive(false)
-                .AutoDelete(false);
+                .Exclusive(broadcast)
+                .AutoDelete(broadcast);
 
             var isCommandQueue = queue.Handlers.All(h => h.ResponseType is null);
 
             if (this.options.Consumer.DeadLetter.Enabled && isCommandQueue)
             {
-                var dlqName = queue.Name + this.options.Consumer.DeadLetter.Suffix;
+                var deadLetterBase = eventBinding?.StableName ?? queue.Name;
+                var dlqName = deadLetterBase + this.options.Consumer.DeadLetter.Suffix;
 
-                var dlxName = queue.Name + ".dlx";
+                var dlxName = deadLetterBase + ".dlx";
 
                 await management.Exchange(dlxName)
                     .Type(ExchangeType.DIRECT)
                     .DeclareAsync();
 
                 await management.Queue(dlqName)
-                    .Type(amqpQueueType)
+                    .Type(eventBinding is null ? amqpQueueType : QueueType.QUORUM)
                     .Exclusive(false)
                     .AutoDelete(false)
                     .DeclareAsync();
@@ -81,6 +89,20 @@ public class RabbitTopologyManager
             }
 
             await queueSpec.DeclareAsync();
+
+            if (eventBinding is not null)
+            {
+                await management.Exchange(eventBinding.Exchange).Type(ExchangeType.TOPIC).DeclareAsync();
+                foreach (var handler in queue.Handlers)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await management.Binding()
+                        .SourceExchange(eventBinding.Exchange)
+                        .DestinationQueue(queue.Name)
+                        .Key(handler.MessageTypeId)
+                        .BindAsync();
+                }
+            }
 
             this.logger.LogInformation("Queue {QueueName} declared", queue.Name);
         }

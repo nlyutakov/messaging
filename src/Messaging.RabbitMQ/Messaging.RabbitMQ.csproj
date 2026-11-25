@@ -5,6 +5,9 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	<ItemGroup>
+		<InternalsVisibleTo Include="Messaging.RabbitMQ.Tests" />
+		<InternalsVisibleTo Include="Messaging.Management" />
+		<InternalsVisibleTo Include="Messaging.Outbox.PostgreSql" />
 		<ProjectReference Include="../Messaging.Abstractions/Messaging.Abstractions.csproj"/>
 		<PackageReference Include="RabbitMQ.AMQP.Client" Version="1.*"/>
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.*"/>

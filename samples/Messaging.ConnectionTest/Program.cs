@@ -29,11 +29,13 @@ public record GetOrderResponse(Guid OrderId, string Status);
 
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand>
 {
-    public Task HandleAsync(CreateOrderCommand command, CancellationToken ct)
+    public async Task HandleAsync(CreateOrderCommand command, CancellationToken ct)
     {
-        Console.WriteLine($"Processing order: {command.OrderId}; simulated failure for retry/DLQ");
+        Console.WriteLine($"START Processing order: {command.OrderId}");
 
-        throw new InvalidOperationException("Simulated database failure.");
+        await Task.Delay(TimeSpan.FromSeconds(5), ct);
+
+        Console.WriteLine($"END Processing order: {command.OrderId}");
     }
 }
 
